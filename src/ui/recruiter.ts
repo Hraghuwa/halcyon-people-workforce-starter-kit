@@ -1,6 +1,6 @@
 // Recruiter side: dashboard, scenario builder, and "The Hiring Floor" (a first-person, three-day play).
 import { db, save, me, clampNpc } from "./store.ts";
-import { ui, esc, ic, avatar, meterRow, chartSlot, gate, ring, pct, sgn, toast, render, CIC } from "./ui.ts";
+import { ui, esc, ic, avatar, chartSlot, gate, ring, pct, sgn, toast, render, CIC, story, type Beat } from "./ui.ts";
 import { S, R1, START, MKS, MN, CITIES, CASES, PERSONAS, DEFAULT_SCENARIO, newPlay, evalRun, funnel, result, lastRunFor, netScore, companyScore,
   type Play, type Decision, type ScenarioCfg } from "./sim.ts";
 import type { HiringLimits } from "../engine/hiringAgent.ts";
@@ -21,6 +21,18 @@ const facts = () => `<div class="facts">${[["people", sc().vacancies, "Temporary
 const briefCard = () => `<section class="card brief"><div class="kick"><b>Round 1</b><span>Day 1 - 3</span></div><h2>${esc(sc().title)}</h2>
   <p>${esc(R1.brief.split(" Data shown")[0].replace(/600/, String(sc().vacancies)))}</p>${art}${facts()}
   <div class="alert">${ic("warn")}<p>If we fail to hire enough workers, stores stay understaffed, which hurts delivery times and customer experience.</p></div></section>`;
+
+// ---------- Briefing (scroll-driven story, shown once per recruiter) ----------
+export const recruiterBeats = (): Beat[] => {
+  const s = sc(), read = Math.min(1, (s.recruiters * 60 * 2) / s.applications);
+  return [
+    { line: "It is festival season. Halcyon Basket is about to get very busy.", sub: "Marketing forecasts orders up 80%. Every store needs more hands." },
+    { stat: { to: s.applications }, line: `people applied for ${s.vacancies} jobs in two days.`, sub: "Stores need them on the floor by Day 4." },
+    { stat: { to: Math.max(1, Math.round(read * 100)), fmt: "pct" }, line: `is all that ${s.recruiters} recruiters can read in that time.`, sub: "About 60 CVs a day, each. The rest sit in a pile." },
+    { stat: { to: 45, fmt: "pct" }, line: "of last festival's temps quit within a month.", sub: "Hire fast and hire wrong, and it costs you twice." },
+    { line: "An AI agent can read every application tonight. But who decides who gets a job?", cta: { label: "Take the desk", act: "brief" } },
+  ];
+};
 
 // ---------- Overview ----------
 export function overview() {
@@ -105,7 +117,13 @@ function dialog(name: string, role: string, text: string, tone = "") {
 }
 function replies(key: "id" | "meera" | "challenge", chosen: string | undefined) {
   return `<div class="you" role="group" aria-label="Your reply">${CASES[key].map(o => `<button type="button" class="reply ${chosen === o.key ? "on" : ""}" ${chosen ? "disabled" : ""} data-k="${key}-${o.key}" onclick="act('case','${key}','${o.key}')">${esc(o.label)}</button>`).join("")}</div>
-    ${chosen ? `<div class="msg me"><div class="bub"><b>You</b><p>${esc(CASES[key].find(o => o.key === chosen)!.label)}</p></div></div><p class="note">${esc(CASES[key].find(o => o.key === chosen)!.note)}</p>` : ""}`;
+    ${chosen ? `<div class="msg me"><div class="bub"><b>You</b><p>${esc(CASES[key].find(o => o.key === chosen)!.label)}</p></div></div><p class="note">${esc(CASES[key].find(o => o.key === chosen)!.note)}</p>${deltaChips(CASES[key].find(o => o.key === chosen)!)}` : ""}`;
+}
+// Juice: the immediate cost of what you just said, in people and in points.
+function deltaChips(o: (typeof CASES)["id"][number]) {
+  const c: [string, number, boolean][] = [["Meera", o.npc?.meera ?? 0, false], ["Dr. Rao", o.npc?.anil ?? 0, false], ...MKS.map(k => [({ revenue: "Revenue", trust: "Trust", morale: "Morale", risk: "Risk" })[k], o.fx[k] ?? 0, k === "risk"] as [string, number, boolean])];
+  const on = c.filter(x => x[1] !== 0);
+  return on.length ? `<div class="deltas" aria-label="Effects of your answer">${on.map(([l, v, inv], i) => `<i class="chip pop ${(inv ? -v : v) > 0 ? "ok" : "bad"}" style="--d:${i * .08}s">${l} ${sgn(v)}</i>`).join("")}</div>` : "";
 }
 const idTarget = () => db.cands.find(c => c.id_check !== "ok") ?? { ...PERSONAS[1], id: "", appliedAt: 0 };
 const chTarget = () => db.cands.find(c => c.challenge && !c.challenge.resolution) ?? { ...PERSONAS[0], id: "" , appliedAt: 0, challenge: { text: "I was told I was not shortlisted. I have a 14-month gap for family reasons. Please look at my file." } };
@@ -131,11 +149,18 @@ function gate3(p: Play) {
   return `<div class="gate wide">${gate("Gate 3")}<b>Offer approval</b>${body}</div>`;
 }
 
+// Clear goals with live status: the core loop of "am I winning?"
+function objectives(p: Play) {
+  const r = result(p, sc(), db.cands), agent = p.choice === "agent";
+  const o: [string, boolean | null][] = [["Fairness ratio at 0.80 or above", agent ? r.run!.fairness.passed : null], ["No gate overruled", agent && p.decision ? p.decision !== "signoff" : null],
+    ["Meera and Dr. Rao both keep 40+ trust", Math.min(db.npc.meera, db.npc.anil) >= 40], ["Company score of 60 or more", p.day === 4 ? r.score >= 60 : null]];
+  return `<ul class="goals">${o.map(([t, ok]) => `<li class="${ok === null ? "na" : ok ? "ok" : "bad"}">${ok === null ? '<span class="o"></span>' : ic(ok ? "check" : "warn")}<span>${t}</span></li>`).join("")}</ul>`;
+}
 function timeline(p: Play) {
   const ev: [boolean, string][] = [[true, `Day 1 · ${(sc().applications + nCands()).toLocaleString()} applications open`], [!!p.choice, `Day 1 · You chose ${R1.choices.find(c => c.id === p.choice)?.label ?? "..."}`],
     [p.day > 1 && p.choice === "agent", "Day 1 · Agent screened everyone"], [!!p.id, "Day 2 · ID case answered"], [!!p.meera, "Day 2 · Store manager handled"],
     [!!p.challenge, "Day 3 · Challenge answered"], [!!p.decision, "Day 3 · Offers decided"], [p.day === 4, "Day 14 · Board review"]];
-  return `<aside class="card tl"><h3>Timeline</h3><ul>${ev.map(([d, t]) => `<li class="${d ? "done" : ""}">${d ? ic("check") : '<span class="o"></span>'}<span>${esc(t)}</span></li>`).join("")}</ul></aside>`;
+  return `<aside class="card tl"><h3>Objectives</h3>${objectives(p)}<h3 class="sp">Timeline</h3><ul>${ev.map(([d, t]) => `<li class="${d ? "done" : ""}">${d ? ic("check") : '<span class="o"></span>'}<span>${esc(t)}</span></li>`).join("")}</ul></aside>`;
 }
 
 function debrief(p: Play) {
@@ -145,7 +170,12 @@ function debrief(p: Play) {
   (["id", "meera", "challenge"] as const).forEach(k => { const o = CASES[k].find(x => x.key === p[k]); if (o) why.push(`${o.label}: ${o.note}`); });
   const nets = R1.choices.map(x => ({ l: x.label, n: x.id === p.choice ? r.net : netScore(x.effects) }));
   const talk = `We chose "${c.label}" for the festival hiring sprint and scored ${r.score}. ${p.choice === "agent" ? `The agent screened ${(sc().applications + nCands()).toLocaleString()} applications, but a person decided ID cases and checked fairness (ratio ${r.fairness?.toFixed(2)}). ${r.d === "signoff" ? "We overruled a blocked fairness gate, which cost us Risk and Trust." : r.d === "hold" ? "We held offers until fairness was fixed." : "A person approved every offer."}` : c.id === "agentic" ? "There was no human checkpoint, which breaks Governance rule 3." : "People kept control, but slowly."}`;
-  return `<section class="card"><div class="ch"><div><small>Debrief · Day 14 board review</small><h2>${r.board ? "The board steps in" : r.score >= 60 ? "The board is pleased" : "The board has questions"}</h2></div><div class="scorebig"><b class="num">${r.score}</b><small>Company score</small></div></div>
+  const fairStar = p.choice === "agent" ? !!r.run?.fairness.passed && p.decision !== "signoff" : p.choice !== "agentic";
+  const stars: [boolean, string][] = [[r.score >= 60, "Score 60 or more"], [fairStar, "Fair and accountable"], [Math.min(db.npc.meera, db.npc.anil) >= 50, "Trusted by your people"]];
+  const mine = db.runs.filter(x => x.name === me()?.name), best = Math.max(0, ...mine.map(x => x.score));
+  const pb = mine.length > 1 ? (r.score >= best ? "New personal best" : `Your best: ${best}`) : "Play again to beat this";
+  return `<section class="card"><div class="ch"><div><small>Debrief · Day 14 board review</small><h2 class="gtext sheen">${r.board ? "The board steps in" : r.score >= 60 ? "The board is pleased" : "The board has questions"}</h2></div><div class="scorebig"><b class="num gtext">${r.score}</b><small>Company score</small></div></div>
+    <div class="stars" role="img" aria-label="${stars.filter(x => x[0]).length} of 3 stars">${stars.map(([on, l], i) => `<span class="star ${on ? "on" : ""}" style="--d:${i * .25 + .3}s">${ic("star")}<small>${l}</small></span>`).join("")}<span class="chip ${r.score >= best ? "ok" : ""}">${pb}</span></div>
     ${r.badges.length ? `<div class="badges">${r.badges.map(b => `<span class="badge">${ic("trophy")}${b}</span>`).join("")}</div>` : '<p class="hint">No badges yet. Fairness, holding the line, and personally reviewing a challenge each earn one.</p>'}
     <div class="two"><div><h3>Why these numbers</h3><ul class="why">${why.map(w => `<li>${esc(w)}</li>`).join("")}</ul></div><div><h3>How the four approaches compare</h3>
     ${chartSlot("c-cmp", { type: "bar", aria: "Net score by approach", data: { labels: nets.map(n => n.l), datasets: [{ data: nets.map(n => n.n), backgroundColor: nets.map(n => n.n < 0 ? "#ff5d70" : "#8b6cf0") , borderRadius: 6 }] }, options: { plugins: { legend: { display: false } } } }, 200)}</div></div>
@@ -156,6 +186,7 @@ function debrief(p: Play) {
 export function decide() {
   const s = sc(), m = me()!;
   if (!s.published) return `<div class="card empty"><h2>Publish your scenario first</h2><p>Candidates cannot apply until the scenario is live.</p><button class="btn primary" onclick="act('go','scenario')">Go to Scenario</button></div>`;
+  if (!m.briefed) return story(recruiterBeats(), "brief");
   let p = db.plays[m.id];
   if (!p) { p = db.plays[m.id] = newPlay(s); save(); }
   const agent = p.choice === "agent";
@@ -216,7 +247,7 @@ export function leaderboard() {
 export const help = () => `<section class="card"><h2>How to play</h2><ol class="steps">${[["Create the scenario", "Set places, cities, applications and recruiters, then publish. Candidates can now apply."], ["Day 1: choose who hires", "Person, Gen AI, an AI agent, or fully agentic AI. If you pick the agent, set its rules and watch it work."],
   ["Day 2: clear the gates", "Answer the HR lead and the store manager. They remember what you do. Then check the fairness gate."], ["Day 3: offers", "Answer a candidate's challenge, then approve, hold, or overrule. Every offer needs a person."],
   ["Day 14: board review", "See your score, badges and how the other approaches compare. Replay to try a different path."]].map(([t, x], i) => `<li class="done"><span class="dot">${i + 1}</span><div><b>${t}</b><p>${x}</p></div></li>`).join("")}</ol>
-  <h3>Words used</h3><p class="hint"><b>Governance rule 3:</b> no AI on hiring without a human checkpoint. <b>Four-fifths rule:</b> the lowest group's selection rate must reach 80% of the highest, used here as an internal guardrail. <b>SPOT:</b> Signal, Pattern, Orchestrate, Test and trust.</p></section>`;
+  <div class="actions"><button class="btn" onclick="act('rebrief')">Watch the briefing again</button></div><h3>Words used</h3><p class="hint"><b>Governance rule 3:</b> no AI on hiring without a human checkpoint. <b>Four-fifths rule:</b> the lowest group's selection rate must reach 80% of the highest, used here as an internal guardrail. <b>SPOT:</b> Signal, Pattern, Orchestrate, Test and trust.</p></section>`;
 
 // ---------- actions ----------
 export function ract(a: string, ...r: any[]): boolean {

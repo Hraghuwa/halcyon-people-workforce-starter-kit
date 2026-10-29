@@ -27,6 +27,7 @@ const P: Record<string, string> = {
   chat: '<path d="M4 5h16v11H9l-5 4z"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', cart: '<path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/>',
   out: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>', plus: '<path d="M12 5v14M5 12h14"/>', warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>', pin: '<path d="M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>', send: '<path d="M4 12l16-8-6 16-3-7z"/>',
 };
 export const ic = (n: string, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] ?? ""}</svg>`;
@@ -57,3 +58,14 @@ export function meterRow(v: Measures, d?: Measures, ghost = false) {
 export function chartSlot(id: string, cfg: any, h = 230) { ui.charts.push({ id, cfg }); return `<div class="chart" style="height:${h}px"><canvas id="${id}" role="img" aria-label="${esc(cfg.aria ?? id)}"></canvas></div>`; }
 export const gate = (n: string) => `<span class="desk">${n}</span>`;
 export const ring = (v: number, label: string, color: string) => `<div class="ringw"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" fill="none" stroke="rgb(255 255 255 / .08)" stroke-width="3"/><circle cx="18" cy="18" r="15.5" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${Math.round(v * 97.4)} 97.4" transform="rotate(-90 18 18)"/></svg><b class="num">${pct(v)}</b><small>${esc(label)}</small></div>`;
+
+// ---------- scroll-driven briefing ----------
+// A tall section with a sticky stage. Words fade in as you scroll, numbers count up, and main.ts (storyTick) does the maths.
+export interface Beat { line: string; stat?: { to: number; fmt?: "n" | "pct" }; sub?: string; cta?: { label: string; act: string } }
+export function story(beats: Beat[], skipAct: string) {
+  return `<section class="story" style="--beats:${beats.length}" aria-label="Briefing"><div class="stage">
+    <button class="skip" onclick="act('${skipAct}')">Skip briefing</button><ol class="sdots" aria-hidden="true">${beats.map((_, i) => `<li data-i="${i}"></li>`).join("")}</ol>
+    ${beats.map((b, i) => `<div class="beat" data-i="${i}">${b.stat ? `<div class="stat gtext sheen" data-to="${b.stat.to}" data-fmt="${b.stat.fmt ?? "n"}" aria-label="${b.stat.to}">0</div>` : ""}
+      <p class="line">${b.line.split(" ").map(w => `<span class="w">${esc(w)}</span>`).join(" ")}</p>${b.sub ? `<p class="sub">${esc(b.sub)}</p>` : ""}
+      ${b.cta ? `<button class="btn primary lg" onclick="act('${b.cta.act}')">${esc(b.cta.label)} ${ic("send")}</button>` : ""}</div>`).join("")}</div></section>`;
+}

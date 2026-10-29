@@ -1,6 +1,6 @@
 // Candidate side: see the opening, apply (or play a persona), chat with the hiring assistant, understand the decision, challenge it.
 import { db, save, me } from "./store.ts";
-import { ui, esc, ic, avatar, toast, render } from "./ui.ts";
+import { ui, esc, ic, avatar, toast, render, story, type Beat } from "./ui.ts";
 import { CITIES, PERSONAS, type Cand } from "./sim.ts";
 
 const form = { city: 0, gender: "F" as "F" | "M", lowIncomePin: false, distanceKm: 8, gapMonths: 0, availableDay: 2, id_check: "ok" as Cand["id_check"], age: 24, text: "" };
@@ -35,7 +35,14 @@ export function journey() {
 }
 
 const chip = (on: boolean, label: string, a: string) => `<button type="button" class="chipb ${on ? "on" : ""}" aria-pressed="${on}" onclick="${a}">${label}</button>`;
+export const candidateBeats = (): Beat[] => [
+  { line: "A festival job. Starting Day 4. Not far from home.", sub: "Halcyon Basket is hiring." },
+  { stat: { to: db.scenario.applications }, line: "other people want it too.", sub: "That is more applications than any one person can read." },
+  { line: "So an AI agent reads yours first. It is fast, and it never gets tired.", sub: "You can chat with it, and ask it why." },
+  { line: "It cannot reject you for a work gap, and it cannot send an offer. A person decides.", cta: { label: "See the open role", act: "brief" } },
+];
 export function roles() {
+  if (me() && !me()!.briefed) return story(candidateBeats(), "brief");
   const s = db.scenario, c = mine();
   if (!s.published) return `<div class="card empty"><h2>No open roles yet</h2><p>When a recruiter publishes a scenario, the role appears here. Keep this tab open: it updates by itself.</p></div>`;
   const job = `<section class="card job"><div class="ch"><div><small>Open now · ${s.cities} cities</small><h2>${esc(s.title)}</h2></div><span class="chip ok">Live</span></div>
@@ -67,7 +74,7 @@ export function chat() {
     ${st && !before ? bot(`<b>${esc(st.title)}.</b> ${esc(st.text)}`) : ""}</section>`;
 }
 
-export const cHelp = () => `<section class="card"><h2>How this works for you</h2><ol class="steps">${[["Apply", "Pick a persona to see a story, or apply as yourself."], ["Screening", "An AI agent reads every application. It cannot send offers or reject anyone for a work gap."], ["A person decides", "A recruiter checks unclear IDs and approves each offer."], ["You can challenge", "If you are not shortlisted, you get the reason in plain words and can ask a person to look again."]]
+export const cHelp = () => `<section class="card"><h2>How this works for you</h2><div class="actions"><button class="btn" onclick="act('rebrief')">Watch the briefing again</button></div><ol class="steps">${[["Apply", "Pick a persona to see a story, or apply as yourself."], ["Screening", "An AI agent reads every application. It cannot send offers or reject anyone for a work gap."], ["A person decides", "A recruiter checks unclear IDs and approves each offer."], ["You can challenge", "If you are not shortlisted, you get the reason in plain words and can ask a person to look again."]]
   .map(([t, x], i) => `<li class="done"><span class="dot">${i + 1}</span><div><b>${t}</b><p>${x}</p></div></li>`).join("")}</ol></section>`;
 
 export function cact(a: string, ...r: any[]): boolean {

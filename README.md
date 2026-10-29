@@ -21,6 +21,8 @@ This folder holds the tested core of our simulation. The build guide (Word docum
 
 Play Round 1: open `simulator.html` in a browser (rebuild with `bun scripts/build-ui.ts` after changing `src/`). It needs internet for the fonts and charts.
 
+Each role opens with a scroll-driven briefing (skippable, replayable from Help): words resolve as you scroll and the numbers count up. The interface uses Poppins and a liquid-glass look, with objectives, relationship changes and a 3-star board review to give each play a goal.
+
 There are two logins, with no password. **Recruiter** creates and publishes the scenario, then plays three days (choose an approach, clear the human gates, approve offers) and gets a debrief and leaderboard. **Candidate** applies (or plays a persona), chats with the screening assistant, sees why they were or were not shortlisted, and can challenge a rejection. Open the page in two tabs of the same browser to play both sides at once; data is stored in that browser only.
 
 Check it works (Node.js 22.6 or newer):

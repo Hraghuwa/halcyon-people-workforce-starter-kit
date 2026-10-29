@@ -2,7 +2,7 @@
 // Who you are is per tab (sessionStorage). No passwords: this is a classroom game, not an account system.
 import { DEFAULT_SCENARIO, type Cand, type LastRun, type Play, type RunRec, type ScenarioCfg } from "./sim.ts";
 
-export interface Profile { id: string; role: "recruiter" | "candidate"; name: string }
+export interface Profile { id: string; role: "recruiter" | "candidate"; name: string; briefed?: boolean }
 export interface Store { v: 1; profiles: Profile[]; scenario: ScenarioCfg; cands: Cand[]; last: LastRun | null; runs: RunRec[]; npc: { meera: number; anil: number }; plays: Record<string, Play> }
 
 const KEY = "halcyon.v1";
