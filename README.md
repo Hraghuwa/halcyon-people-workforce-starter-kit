@@ -13,6 +13,7 @@ This folder holds the tested core of our simulation. The build guide (Word docum
 | `src/engine/shiftFillAgent.ts` | The Shift-Fill Agent (Round 2): Perceive, Plan, Act, Reflect on synthetic staff |
 | `src/engine/hiringAgent.ts` | Round 1 hiring agent with three human gates (ID review, fairness sign-off, recruiter approval) |
 | `simulator.html` | Playable Round 1 simulator, Recruiter and Candidate sides (built from `src/ui/`) |
+| `src/ui/map.ts` | Hiring Map: where the agent's shortlist falls around a city hub, with fairness-by-distance and what-if rules |
 | `src/ui/sim.test.ts` | Tests for the game logic behind the screen (run with `bun`) |
 | `src/engine/hiringAgent.test.ts` | Tests for the hiring gates |
 | `docs/adr/0001-round1-hiring-human-in-the-loop.md` | Design decision and reasoning for Round 1 |

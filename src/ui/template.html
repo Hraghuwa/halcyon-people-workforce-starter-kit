@@ -170,6 +170,12 @@ h1,h2{font-weight:700;letter-spacing:-.03em}.pagehead h1{font-size:30px}
 @keyframes starpop{0%{opacity:0;transform:scale(.4) rotate(-20deg)}100%{opacity:1;transform:none}}
 .deltas{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0 54px}.chip.pop{animation:chippop .4s var(--d,0s) both cubic-bezier(.34,1.56,.64,1)}@keyframes chippop{from{opacity:0;transform:translateY(8px) scale(.7)}}
 .mtr .fill{box-shadow:0 0 12px -2px currentColor}
+/* hiring map */
+.mapwrap{position:relative;margin:12px 0 8px}.mapwrap canvas{display:block;width:100%;height:clamp(340px,56vh,560px);border-radius:var(--r-sm);background:radial-gradient(circle at 50% 50%,rgb(255 255 255 / .05),transparent 72%);cursor:crosshair}
+.tip{position:absolute;z-index:3;display:flex;flex-direction:column;gap:2px;max-width:220px;padding:9px 12px;border-radius:12px;font-size:12.5px;pointer-events:none;background:rgb(14 18 46 / .86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgb(255 255 255 / .2);box-shadow:0 10px 30px -8px #000}.tip span{color:var(--text-2)}.tip .st{color:#fff;font-weight:600}.tip[hidden]{display:none}
+.mapcard .chips{margin:8px 0}.lay{padding-bottom:4px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2)}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}.legend .ringi{background:transparent;border:2px solid #fff;width:12px;height:12px}
+.band{grid-template-columns:76px 1fr 44px}.dotl{width:12px;height:12px;border-radius:50%;background:var(--bad);flex:none;box-shadow:0 0 0 2px rgb(255 255 255 / .6)}.dotl.ok{background:var(--ok)}.dotl.gate{background:var(--gate)}
 @media(prefers-reduced-transparency:reduce){.card,.meters,.top,.rail,.lcard,.toast{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel)}.orbs{display:none}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.card,.meters,.top,.rail,.lcard,.toast{background:var(--panel)}}
 @media(prefers-reduced-motion:reduce){.story{height:auto}.stage{position:static;height:auto;overflow:visible}.beat{position:static;opacity:1!important;pointer-events:auto;padding:36px max(6vw,16px)}.beat .btn,.beat .sub{opacity:1!important}.line .w{opacity:1!important;transform:none!important;filter:none!important}.sdots,.skip{display:none}.orbs i{animation:none}}
