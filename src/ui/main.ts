@@ -1,163 +1,95 @@
-// Round 1 simulator screen. Runs the real engine in the browser; no server needed.
-// Flow: choose who hires -> set the agent's rules (see consequences live) -> pass three human gates -> result.
-import data from "../data/people-workforce.json";
-import { newGame, playRound, netScore, companyScore, availability, type Scenario, type ChoiceId, type Measures } from "../engine/game.ts";
-import { makeApplicants, runHiringAgent, simulateOutcome, hiringModifiers, sendOffers, PERSON_BASELINE,
-  DEFAULT_HIRING_LIMITS, type HiringLimits, type HiringRun } from "../engine/hiringAgent.ts";
+// Halcyon Basket: People & Workforce simulator. Login -> role shell -> views. Two roles: Recruiter and Candidate.
+import { db, signIn, signOut, me, onRemoteChange, reset } from "./store.ts";
+import { ui, esc, ic, avatar, meterRow, setRender, toast } from "./ui.ts";
+import { START, result } from "./sim.ts";
+import { overview, scenarioView, decide, agentDemo, impact, leaderboard, help, ract, playOf } from "./recruiter.ts";
+import { journey, roles, chat, cHelp, cact, mine } from "./candidate.ts";
 
-const S = data as unknown as Scenario, R1 = S.rounds[0], APPS = makeApplicants(), START = S.shared.start;
-type Decision = "" | "approve" | "signoff" | "hold";
-const st = { choice: "" as "" | ChoiceId, lim: { ...DEFAULT_HIRING_LIMITS } as HiringLimits, decision: "" as Decision,
-  confirm: false, demo: false, seen: new Set<string>(), prev: { ...START } as Measures };
-const $ = (id: string) => document.getElementById(id)!;
-const pct = (x: number) => Math.round(x * 100) + "%";
-const sgn = (n: number) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n);
-const MK = ["revenue", "trust", "morale", "risk"] as const;
-const MN: Record<keyof Measures, string> = { revenue: "Revenue", trust: "Customer trust", morale: "Staff morale", risk: "Risk" };
-const enter = (k: string) => (st.seen.has(k) ? "" : (st.seen.add(k), "enter"));
+declare const Chart: any;
+let role: "recruiter" | "candidate" = "recruiter";
+let bump = false;
+let charts: any[] = [];
 
-type Ev = { run: HiringRun; out: ReturnType<typeof simulateOutcome> };
-const cache = new Map<string, Ev>();
-function evalLim(l: HiringLimits): Ev {
-  const k = JSON.stringify(l); let v = cache.get(k);
-  if (!v) { const run = runHiringAgent(APPS, 600, 9, l); v = { run, out: simulateOutcome(run) }; cache.set(k, v); }
-  return v;
+const RNAV: [string, string, string][] = [["overview", "home", "Overview"], ["scenario", "scenario", "Scenario"], ["decide", "decide", "Make a Decision"], ["agent", "agent", "AI Agent Demo"], ["impact", "impact", "Your Impact"], ["leaderboard", "trophy", "Leaderboard"], ["help", "help", "Help"]];
+const CNAV: [string, string, string][] = [["journey", "home", "My Journey"], ["roles", "scenario", "Open Roles"], ["chat", "chat", "Interview Chat"], ["help", "help", "Help"]];
+const TITLES: Record<string, string> = { overview: "Hiring command centre", scenario: "Scenario", decide: "The Hiring Floor", agent: "AI Agent Demo", impact: "Your Impact", leaderboard: "Leaderboard", help: "Help", journey: "My Journey", roles: "Open Roles", chat: "Interview Chat" };
+
+const cartArt = `<svg viewBox="0 0 120 90" class="cart" aria-hidden="true"><rect x="62" y="30" width="30" height="26" rx="3" fill="#c99556"/><rect x="74" y="30" width="6" height="26" fill="#e8c78d" opacity=".8"/><rect x="44" y="40" width="26" height="20" rx="3" fill="#b68446"/>
+  <path d="M10 18h14l10 40h50l8-28H30" fill="none" stroke="#9b7cf6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="42" cy="72" r="6" fill="#9b7cf6"/><circle cx="78" cy="72" r="6" fill="#9b7cf6"/></svg>`;
+
+type Prof = NonNullable<ReturnType<typeof me>>;
+function topbar(p: Prof) {
+  const rounds: [string, string][] = [["1", "Day 1-3"], ["2", "Day 4-7"], ["3", "Day 8-10"], ["4", "Day 11-13"]];
+  return `<header class="top"><div class="brand">${ic("cart")}<b>Halcyon<br>Basket</b></div><p class="tag">Delivering more<br>to every home</p>
+    <ol class="rounds" aria-label="Game rounds">${rounds.map(([n, d], i) => `<li class="${i === 0 ? "now" : "locked"}" title="${i === 0 ? "Round 1 is playable" : "Coming soon"}"><span class="rn">${n}</span><div><b>${d}</b><small>${i === 0 ? "People &amp; Workforce" : "Coming soon"}</small></div></li>`).join("")}
+    <li class="locked"><span class="rn">${ic("check")}</span><div><b>Day 14</b><small>Board Review</small></div></li></ol>
+    <button class="icon" aria-label="Notifications">${ic("bell")}</button>
+    <div class="me">${avatar(p.name, 38)}<div><b>${esc(p.name)}</b><small>${p.role === "recruiter" ? "Recruiter" : "Candidate"}</small></div><button class="icon" aria-label="Sign out" title="Sign out" onclick="act('logout')">${ic("out")}</button></div></header>`;
 }
-const peek = (patch: Partial<HiringLimits>) => evalLim({ ...st.lim, ...patch });
-
-function outcome(choice: ChoiceId, decision: Decision) {
-  const base = newGame(S);
-  if (choice !== "agent") return { g: playRound(S, base, choice) };
-  const { run, out } = evalLim(st.lim);
-  const d = decision || (run.fairness.passed ? "approve" : "hold"); // projection: the safe path
-  const sent = d === "hold" ? 0 : sendOffers({ ...run, audit: [] }, "Recruiter R. Sen", run.shortlist.map(a => a.id), d === "signoff" ? "HR Lead" : undefined).length;
-  const mods = hiringModifiers(run, out, d === "signoff");
-  return { g: playRound(S, base, "agent", undefined, false, mods), run, out, d, mods, sent };
+function rail(p: Prof) {
+  const nav = p.role === "recruiter" ? RNAV : CNAV;
+  return `<nav class="rail" aria-label="Main">${nav.map(([k, i, l]) => `<button class="nav ${ui.view === k ? "on" : ""}" ${ui.view === k ? 'aria-current="page"' : ""} onclick="act('go','${k}')">${ic(i)}<span>${l}</span></button>`).join("")}
+    <div class="promo">${cartArt}<b>Festival Sale</b><small>Be Ready. Deliver More.</small><button class="linkb" onclick="act('wipe')">Reset all game data</button></div></nav>`;
 }
 
-// ---------- pieces ----------
-function scoreboard() {
-  const o = st.choice ? outcome(st.choice, st.decision) : null, m = o ? o.g.measures : START;
-  const committed = st.choice && (st.choice !== "agent" || st.decision);
-  const c = st.choice ? R1.choices.find(x => x.id === st.choice)! : null;
-  const meters = MK.map(k => {
-    const d = o ? o.g.history[0].deltas[k] : 0, good = (k === "risk" ? -d : d) >= 0;
-    return `<div class="meter"><div class="mh"><span>${MN[k]}</span><b class="num">${m[k]}</b>${o ? `<i class="chip ${d === 0 ? "" : good ? "ok" : "bad"}">${sgn(d)}</i>` : ""}</div>
-      <div class="track" role="img" aria-label="${MN[k]} ${m[k]} of 100, started at ${START[k]}"><span class="fill ${k === "risk" ? "risk" : ""} ${committed ? "" : "ghost"}" style="--from:${st.prev[k] / 100};--to:${m[k] / 100}"></span><span class="start" style="left:${START[k]}%"></span></div></div>`;
-  }).join("");
-  const over = c && c.cost > S.shared.teamBudgetUnits + 1e-9;
-  return `<aside class="board" aria-label="Scoreboard"><h2>${committed ? "Scoreboard" : o ? "Projected scoreboard" : "Scoreboard"}</h2>
-    ${meters}
-    <div class="score"><small>Company score</small><b class="num">${o ? companyScore(o.g.measures) : companyScore(START)}</b></div>
-    <div class="budget"><div class="mh"><span>AI budget</span><b class="num">${c ? c.cost : 0} / ${S.shared.teamBudgetUnits}</b></div>
-      <div class="track"><span class="fill ${over ? "risk" : ""}" style="--from:0;--to:${Math.min(1, (c ? c.cost : 0) / S.shared.teamBudgetUnits)}"></span></div>
-      ${over ? '<p class="hint bad">Over your team’s share.</p>' : ""}</div>
-    <p class="hint">Ticks mark where each score started. The board steps in if Trust or Morale falls below ${S.shared.boardRule.trustBelow}, or Risk rises above ${S.shared.boardRule.riskAbove}.</p></aside>`;
+function login() {
+  const rc = role === "recruiter";
+  return `<div class="login"><section class="lhero"><div class="brand big">${ic("cart")}<b>Halcyon Basket</b></div>
+    <h1>${rc ? "You decide who gets hired." : "You are the one waiting for the call."}</h1>
+    <p>${rc ? "600 festival jobs. 8,400 applicants. 12 tired recruiters. Use an AI agent, and keep people in charge." : "Apply for a festival job, chat with the screening assistant, and see exactly why the system decided what it did."}</p>
+    <div class="lstats"><div><b class="num">8,400</b><small>applications in 2 days</small></div><div><b class="num">3</b><small>human gates</small></div><div><b class="num">4</b><small>ways to hire</small></div></div></section>
+    <section class="lcard"><div class="seg2" role="tablist" aria-label="Choose your role">${(["recruiter", "candidate"] as const).map(r => `<button role="tab" aria-selected="${role === r}" data-k="role-${r}" onclick="act('role','${r}')">${ic(r === "recruiter" ? "decide" : "user")}<b>${r === "recruiter" ? "Recruiter" : "Candidate"}</b><small>${r === "recruiter" ? "Create the scenario and run the hiring" : "Apply and get hired"}</small></button>`).join("")}</div>
+    <label class="field col"><b>Your name</b><input id="nm" class="text" data-k="nm" maxlength="30" placeholder="${rc ? "For example: Shreya" : "For example: Priya"}" onkeydown="if(event.key==='Enter')act('login')"></label>
+    <button class="btn primary wide" data-k="go" onclick="act('login')">Continue as ${rc ? "Recruiter" : "Candidate"} ${ic("send")}</button>
+    <p class="hint">No password: this is a classroom game. To see both sides at once, open this page in a second tab and sign in as the other role.</p></section></div>`;
 }
 
-function choices() {
-  const av = availability(S, newGame(S), st.demo ? 999 : S.shared.teamBudgetUnits);
-  return `<section class="step"><h2><span class="n">1</span>Who does the hiring?</h2>
-  <div class="cards" role="radiogroup" aria-label="Hiring choice">${av.map(({ choice: c, net, locked }) => {
-    const e = c.effects, no = c.humanCheckpoint === "No";
-    return `<label class="choice ${st.choice === c.id ? "on" : ""} ${locked ? "locked" : ""}">
-      <input type="radio" name="choice" data-k="choice-${c.id}" ${st.choice === c.id ? "checked" : ""} ${locked ? "disabled" : ""} onchange="act('choice','${c.id}')">
-      <b>${c.label}</b><small>${c.delegation}</small>
-      <span class="fx">${MK.map(k => `<i class="chip ${e[k] === 0 ? "" : (k === "risk" ? -e[k] : e[k]) > 0 ? "ok" : "bad"}" title="${MN[k]}">${({ revenue: "Rev", trust: "Trust", morale: "Morale", risk: "Risk" })[k]} ${sgn(e[k])}</i>`).join("")}</span>
-      <span class="meta"><span class="gate-tag ${no ? "none" : c.id === "person" ? "" : "has"}">${no ? "No human checkpoint" : c.id === "person" ? "Human only" : "Human checkpoint"}</span><span class="num">${c.cost} units</span></span>
-      ${locked ? `<em class="bad">${locked}</em>` : ""}</label>`;
-  }).join("")}</div></section>`;
-}
-
-function seg(k: keyof HiringLimits, opts: { v: number; label: string; sub: string }[]) {
-  return `<div class="seg" role="radiogroup">${opts.map(o => `<button type="button" role="radio" aria-checked="${st.lim[k] === o.v}" data-k="${k}-${o.v}" onclick="act('${k}',${o.v})"><b>${o.label}</b><small>${o.sub}</small></button>`).join("")}</div>`;
-}
-function lever(k: "balancePins" | "idLate", title: string, why: string, on: boolean, alt: Ev) {
-  const f = alt.run.fairness;
-  return `<div class="lever"><div class="lh"><div><b>${title}</b><p>${why}</p></div>
-    <button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${title}" data-k="${k}" onclick="act('${k}',${!on})"><span></span></button></div>
-    <p class="if">If you turned it ${on ? "off" : "on"}: fairness <b class="${f.passed ? "ok" : "bad"}">${f.ratio.toFixed(2)}</b>, ID cases for recruiters <b>${alt.run.idCases}</b>, people staying 30 days <b>${pct(alt.out.stay30)}</b></p></div>`;
-}
-function rules() {
-  const cap = st.lim.reviewCapacity;
-  return `<section class="step ${enter("rules")}"><h2><span class="n">2</span>Set the agent’s rules</h2>
-  <p class="lead">The agent screens all 8,400 applications. You decide how it behaves. Each switch shows what it would change.</p>
-  ${lever("balancePins", "Reserve places for every pin-code group", "Without this the agent favours people who live near stores, and shuts out poorer areas.", st.lim.balancePins, peek({ balancePins: !st.lim.balancePins }))}
-  ${lever("idLate", "Check IDs only for the shortlist", "Rank first, then check IDs for likely hires. Checking all 8,400 first swamps recruiters.", !st.lim.idFirst, peek({ idFirst: !st.lim.idFirst }))}
-  <div class="lever"><div class="lh"><div><b>Shortlist size</b><p>Extra names cover people who do not show up.</p></div></div>
-    ${seg("overbook", [1, 1.3, 1.6].map(v => ({ v, label: v + "×", sub: "fill " + pct(peek({ overbook: v }).out.fillRate) })))}</div>
-  <div class="lever"><div class="lh"><div><b>Recruiters on ID review</b><p>Each reviews about 20 unclear IDs a day.</p></div></div>
-    ${seg("reviewCapacity", [80, 160, 240].map(v => ({ v, label: v / 20 + " of 12", sub: peek({ reviewCapacity: v }).run.deferred ? peek({ reviewCapacity: v }).run.deferred + " waiting" : "no queue" })))}</div></section>`;
-}
-
-function gates() {
-  const { run, out } = evalLim(st.lim), f = run.fairness, cap = st.lim.reviewCapacity, over = run.idCases > cap;
-  const g1 = `<div class="gate"><div class="gh"><span class="desk">Gate 1</span><b>ID review</b><i class="chip ${over ? "bad" : "ok"}">${over ? run.deferred + " waiting" : "Cleared"}</i></div>
-    <p>Recruiters check IDs the agent cannot read or match. Nobody is rejected for this; they wait for a person.</p>
-    <div class="track" role="img" aria-label="${run.idCases} ID cases, capacity ${cap}"><span class="fill ${over ? "risk" : ""}" style="--from:0;--to:${Math.min(1, run.idCases / cap)}"></span></div><small class="num">${run.idCases} cases · capacity ${cap} a day</small></div>`;
-  const groups: [string, number][] = [["Women", f.rates.women], ["Men", f.rates.men], ["Low-income pin codes", f.rates.lowIncomePin], ["Other pin codes", f.rates.otherPin]];
-  const mx = Math.max(...groups.map(x => x[1]), 0.01);
-  const g2 = `<div class="gate"><div class="gh"><span class="desk">Gate 2</span><b>Fairness check</b><i class="chip ${f.passed ? "ok" : "bad"}">${f.passed ? "Cleared" : "Blocked"}</i></div>
-    <p>Share of applicants shortlisted, by group. The lowest group must reach 80% of the highest. Groups are checked, never used to rank.</p>
-    ${groups.map(([n, v]) => `<div class="grp"><span>${n}</span><div class="track"><span class="fill" style="--from:0;--to:${v / mx}"></span></div><b class="num">${pct(v)}</b></div>`).join("")}
-    <small class="num">Ratio ${f.ratio.toFixed(2)} (needs 0.80)</small></div>`;
-  let act = "";
-  if (st.decision === "approve" || st.decision === "signoff") {
-    act = `<div class="offer"><div class="sheet"><b>${run.shortlist.length} offer letters</b><small>${pct(out.fillRate)} of places filled</small></div>
-      <div class="stamp ${enter("stamp" + st.decision)}" role="img" aria-label="Approved">APPROVED<small>R. Sen · Recruiter${st.decision === "signoff" ? " · HR Lead override" : ""}</small></div></div>`;
-  } else if (st.decision === "hold") act = `<p class="hint">Offers held. Stores stay short-staffed while you change the rules above.</p>`;
-  else if (f.passed) act = `<button class="btn primary" data-k="approve" onclick="act('decision','approve')">Approve ${run.shortlist.length} offers as Recruiter R. Sen</button><p class="hint">Governance rule 3: no offer leaves without a person’s approval.</p>`;
-  else if (!st.confirm) act = `<p class="bad"><b>Offers are blocked.</b> Fix the rules above, or overrule.</p>
-    <button class="btn primary" data-k="hold" onclick="act('decision','hold')">Hold offers and fix the rules</button>
-    <button class="btn danger" data-k="overrule" onclick="act('confirm',true)">HR Lead overrules…</button>`;
-  else act = `<div class="confirm"><b>Overrule the fairness gate?</b><p>Offers go out although a group is under-selected. This adds Risk 3 and costs 2 Trust, and the decision is logged under the HR Lead’s name.</p>
-    <button class="btn" data-k="cancel" onclick="act('confirm',false)">Cancel</button><button class="btn danger" data-k="signoff" onclick="act('decision','signoff')">Yes, overrule</button></div>`;
-  return `<section class="step ${enter("gates")}"><h2><span class="n">3</span>Pass the human gates</h2><div class="gates">${g1}${g2}
-    <div class="gate wide"><div class="gh"><span class="desk">Gate 3</span><b>Offer approval</b></div>${act}</div></div></section>`;
-}
-
-function result() {
-  const o = outcome(st.choice as ChoiceId, st.decision), h = o.g.history[0], c = R1.choices.find(x => x.id === st.choice)!;
-  const why: string[] = [c.why];
-  if (o.run && o.out) {
-    if (!o.run.fairness.passed) why.push(o.d === "signoff" ? "You overruled a failed fairness gate: Risk +3, Trust −2." : "Offers were held while fairness failed: Revenue −2.");
-    if (o.run.deferred) why.push(`${o.run.deferred} ID cases had no recruiter free: Morale −1.`);
-    if (o.out.fillRate < 0.9) why.push(`Only ${pct(o.out.fillRate)} of places filled: Revenue −1.`);
-    why.push(`${pct(o.out.stay30)} expected to stay 30 days (last festival ${pct(PERSON_BASELINE.stay30)}): ${sgn(o.g.carry.morale)} Morale carried to Round 4.`);
+function app(p: Prof) {
+  ui.charts = [];
+  const v = ui.view;
+  const body = p.role === "recruiter" ? (({ overview, scenario: scenarioView, decide, agent: agentDemo, impact, leaderboard, help } as Record<string, () => string>)[v] ?? overview)()
+    : (({ journey, roles, chat, help: cHelp } as Record<string, () => string>)[v] ?? roles)();
+  let meters = "";
+  if (p.role === "recruiter") {
+    const pl = playOf();
+    if (pl?.choice) { const r = result(pl, db.scenario, db.cands); meters = meterRow(r.measures, r.deltas, pl.day < 4); } else meters = meterRow(START);
   }
-  const nets = R1.choices.map(x => ({ id: x.id, label: x.label, n: x.id === st.choice ? netScore(h.deltas) : netScore(outcome(x.id, "").g.history[0].deltas) }));
-  const talk = `We chose "${c.label}". Result: Revenue ${sgn(h.deltas.revenue)}, Trust ${sgn(h.deltas.trust)}, Morale ${sgn(h.deltas.morale)}, Risk ${sgn(h.deltas.risk)}; company score ${companyScore(o.g.measures)}.` +
-    (o.run ? ` The agent screened 8,400 applications, but people made every decision: ID review, a fairness check (ratio ${o.run.fairness.ratio.toFixed(2)}) and approval of each offer${o.d === "signoff" ? ", and our HR lead overruled one blocked gate, which cost us Risk" : ""}.` : c.id === "agentic" ? " There was no human checkpoint, which breaks Governance rule 3." : "");
-  return `<section class="step result ${enter("res")}" aria-live="polite"><h2 tabindex="-1" data-k="result"><span class="n">${st.choice === "agent" ? 4 : 2}</span>What happened</h2>
-    ${h.boardSteppedIn ? '<p class="bad"><b>The board steps in.</b></p>' : ""}
-    <ul class="why">${why.map(w => `<li>${w}</li>`).join("")}</ul>
-    <h3>How the four choices compare (net points)</h3>
-    <div class="cmp">${nets.map(x => `<div class="${x.id === st.choice ? "me" : ""}"><span>${x.label}</span><div class="track"><span class="fill ${x.n < 0 ? "risk" : ""}" style="--from:0;--to:${Math.min(1, Math.abs(x.n) / 12)}"></span></div><b class="num">${sgn(x.n)}</b></div>`).join("")}</div>
-    <h3>Say it in one breath</h3><p class="talk" id="talk">${talk}</p>
-    <button class="btn" data-k="copy" onclick="act('copy')">Copy talking points</button><button class="btn" data-k="again" onclick="act('reset')">Start over</button></section>`;
+  return `${topbar(p)}<div class="shell">${rail(p)}<main id="main" tabindex="-1"><div class="pagehead"><h1>${TITLES[v] ?? ""}</h1></div>${meters}${body}</main></div>`;
 }
 
-function render() {
-  const fk = (document.activeElement as HTMLElement | null)?.dataset?.k;
-  const showRules = st.choice === "agent", showRes = st.choice && (st.choice !== "agent" || st.decision) && !(st.decision === "hold");
-  $("app").innerHTML = `<header class="top"><div><small>Halcyon Basket · People &amp; Workforce</small><h1>${R1.title}</h1></div>
-    <label class="demo"><input type="checkbox" data-k="demo" ${st.demo ? "checked" : ""} onchange="act('demo',this.checked)"> Demo: ignore AI budget</label></header>
-    <div class="layout"><main>
-    <section class="brief"><p>${R1.brief.split(" Data shown")[0]}</p><div class="facts"><span><b class="num">8,400</b>applications</span><span><b class="num">12</b>recruiters</span><span><b class="num">600</b>places by Day 4</span><span><b class="num">45%</b>quit last festival</span></div></section>
-    ${choices()}${st.choice ? "" : '<p class="empty">Pick an option to see its projected effect on the scoreboard.</p>'}
-    ${showRules ? rules() + gates() : ""}${showRes ? result() : ""}</main>${scoreboard()}</div>`;
-  MK.forEach(k => { const o = st.choice ? outcome(st.choice, st.decision) : null; st.prev[k] = o ? o.g.measures[k] : START[k]; });
+function draw() {
+  charts.forEach(c => c.destroy()); charts = [];
+  if (typeof Chart === "undefined") { document.querySelectorAll(".chart").forEach(e => (e.innerHTML = '<p class="hint">Charts need an internet connection to load.</p>')); return; }
+  Chart.defaults.color = "#aab0cf"; Chart.defaults.borderColor = "rgba(255,255,255,.07)"; Chart.defaults.font.family = "Instrument Sans, system-ui, sans-serif";
+  ui.charts.forEach(({ id, cfg }) => {
+    const el = document.getElementById(id) as HTMLCanvasElement | null; if (!el) return;
+    const o = cfg.options ?? {};
+    charts.push(new Chart(el, { ...cfg, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 450 }, ...o,
+      plugins: { ...(o.plugins ?? {}), legend: { ...(o.plugins?.legend ?? {}), labels: { usePointStyle: true, boxWidth: 8 } } } } }));
+  });
+}
+
+function paint() {
+  const root = document.getElementById("app")!, fk = (document.activeElement as HTMLElement | null)?.dataset?.k, nm = (document.getElementById("nm") as HTMLInputElement | null)?.value;
+  const p = me();
+  if (p && !ui.view) ui.view = p.role === "recruiter" ? "overview" : mine() ? "journey" : "roles";
+  root.innerHTML = (p ? app(p) : login()) + (ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : "");
+  if (!p && nm) (document.getElementById("nm") as HTMLInputElement).value = nm;
+  document.title = p ? `${TITLES[ui.view] ?? "Halcyon"} · Halcyon People & Workforce` : "Halcyon People & Workforce Simulator";
+  draw();
   if (fk) (document.querySelector(`[data-k="${fk}"]`) as HTMLElement | null)?.focus({ preventScroll: true });
+  if (bump) { bump = false; const m = document.querySelectorAll(".stack .msg, .stack .gate"); m[m.length - 1]?.scrollIntoView({ behavior: "smooth", block: "center" }); }
 }
+setRender(paint);
 
-(window as any).act = (k: string, v?: any) => {
-  if (k === "choice") { st.choice = v; st.decision = ""; st.confirm = false; st.seen.clear(); }
-  else if (k === "decision") { st.decision = v; st.confirm = false; render(); (document.querySelector('[data-k="result"]') as HTMLElement | null)?.focus(); return; }
-  else if (k === "confirm") st.confirm = v;
-  else if (k === "demo") st.demo = v;
-  else if (k === "reset") { st.choice = ""; st.decision = ""; st.confirm = false; st.seen.clear(); st.prev = { ...START }; st.lim = { ...DEFAULT_HIRING_LIMITS }; window.scrollTo({ top: 0 }); }
-  else if (k === "copy") { const t = $("talk").innerText; (navigator.clipboard?.writeText(t) ?? Promise.reject()).then(() => alert("Copied"), () => alert("Select the text above and copy it.")); return; }
-  else { st.lim = { ...st.lim, [k === "idLate" ? "idFirst" : k]: k === "idLate" ? !v : v }; st.decision = ""; st.confirm = false; st.seen.delete("stampapprove"); st.seen.delete("stampsignoff"); }
-  render();
+(window as any).act = (a: string, ...r: any[]) => {
+  if (a === "go") { ui.view = r[0]; paint(); window.scrollTo({ top: 0 }); return; }
+  if (a === "role") { role = r[0]; paint(); return; }
+  if (a === "login") { const p = signIn(role, (document.getElementById("nm") as HTMLInputElement)?.value ?? ""); ui.view = ""; paint(); toast("Welcome, " + p.name); return; }
+  if (a === "logout") { signOut(); ui.view = ""; paint(); return; }
+  if (a === "wipe") { if (confirm("Erase all scenarios, candidates and scores on this browser?")) { reset(); signOut(); ui.view = ""; paint(); } return; }
+  if (["case", "decision", "run", "day", "finish"].includes(a)) bump = true;
+  if (ract(a, ...r) || cact(a, ...r)) return;
 };
-render();
+onRemoteChange(paint);
+paint();

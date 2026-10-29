@@ -1,85 +1,132 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Halcyon People Workforce Simulator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <style>
-/* Tokens named from the hiring desk: kraft desk, paper sheets, stamp-pad ink, marigold for "a person is here". */
-:root{color-scheme:light;
- --kraft:#efe9dd;--paper:#fffdf8;--paper-inset:#f6f2e8;--line:rgb(60 50 30 / .13);--line-strong:rgb(60 50 30 / .24);
- --ink:#1f2230;--ink-2:#4a4a52;--ink-3:#6a665c;
- --stamp:#2d3fb0;--stamp-soft:#e8ebfa;--marigold:#e8a21a;--marigold-soft:#fdf1d4;--marigold-ink:#6b4500;
- --cleared:#1c7a4a;--cleared-soft:#e2f3ea;--flagged:#b3261e;--flagged-soft:#fbe7e5;
- --font-head:"Bricolage Grotesque",system-ui,sans-serif;--font-body:"IBM Plex Sans",system-ui,sans-serif;--font-num:"IBM Plex Mono",ui-monospace,monospace;
- --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s6:24px;--s8:32px;--s12:48px;--r:12px;--r-sm:8px;
- --ease:cubic-bezier(.4,0,.2,1);--ease-out:cubic-bezier(0,0,.2,1)}
+/* Tokens named from the hiring floor at night: midnight desk, paper-under-lamp panels, stamp-pad violet, marigold for "a person is here". */
+:root{color-scheme:dark;
+ --midnight:#090c1a;--rail:#0c1023;--panel:#111631;--panel-2:#171d3b;--panel-3:#1d2447;
+ --line:rgb(255 255 255 / .07);--line-2:rgb(255 255 255 / .14);
+ --text:#eceefa;--text-2:#b0b6d3;--text-3:#8189ad;
+ --violet:#8b6cf0;--violet-2:#6a4de0;--violet-soft:rgb(139 108 240 / .16);
+ --rev:#37d783;--trust:#4da6ff;--morale:#a78bfa;--risk:#ff5d70;--gate:#f2b84b;--gate-soft:rgb(242 184 75 / .12);--ok:#3ddc97;--bad:#ff6b7d;
+ --f-head:"Bricolage Grotesque",system-ui,sans-serif;--f-body:"Instrument Sans",system-ui,sans-serif;
+ --r:14px;--r-sm:9px;--ease:cubic-bezier(.4,0,.2,1);--out:cubic-bezier(0,0,.2,1)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--kraft);color:var(--ink);font:15px/1.55 var(--font-body)}
-h1,h2,h3{font-family:var(--font-head);letter-spacing:-.02em;line-height:1.15;margin:0}
-h1{font-size:clamp(24px,3.2vw,34px);font-weight:700}h2{font-size:20px;font-weight:700;display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s3)}h3{font-size:15px;margin:var(--s6) 0 var(--s2)}
-small{color:var(--ink-3)}p{margin:0 0 var(--s2)}.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
-#app{max-width:1120px;margin:0 auto;padding:var(--s6) var(--s4) 64px}
-.top{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--s4);flex-wrap:wrap;margin-bottom:var(--s6)}
-.demo{font-size:13px;color:var(--ink-3);cursor:pointer}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--s8);align-items:start}
-main{display:flex;flex-direction:column;gap:var(--s6);min-width:0}
-.brief,.step{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:var(--s6)}
-.brief p{font-size:16px;margin-bottom:var(--s4)}
-.facts{display:flex;flex-wrap:wrap;gap:var(--s2)}.facts span{background:var(--paper-inset);border-radius:var(--r-sm);padding:var(--s2) var(--s3);font-size:13px;color:var(--ink-3)}.facts b{display:block;font-size:20px;color:var(--ink)}
-.n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--paper);font:500 13px var(--font-num)}
-.lead{color:var(--ink-2)}.empty{color:var(--ink-3);text-align:center;margin:0}
-/* choices */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:var(--s3)}
-.choice{position:relative;display:flex;flex-direction:column;gap:var(--s2);padding:var(--s4);background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--r);cursor:pointer;transition:border-color .15s var(--ease),background-color .15s var(--ease),transform .1s}
-.choice:hover{border-color:var(--stamp);background:#fbfaf3}.choice:active{transform:scale(.99)}
-.choice.on{border-color:var(--stamp);background:var(--stamp-soft);box-shadow:0 0 0 1px var(--stamp)}
-.choice:has(input:focus-visible){outline:2px solid var(--stamp);outline-offset:2px}
-.choice.locked{opacity:.55;cursor:not-allowed}.choice.locked:hover{border-color:var(--line-strong);background:var(--paper)}
-.choice input{position:absolute;opacity:0;inset:0;margin:0;cursor:inherit}
-.choice b{font:700 17px var(--font-head)}.choice em{font-style:normal;font-size:12px}
-.fx{display:flex;flex-wrap:wrap;gap:var(--s1)}.meta{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);margin-top:auto;font-size:12px;color:var(--ink-3)}
-.gate-tag{white-space:nowrap;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--marigold-soft);color:var(--marigold-ink)}.gate-tag.none{background:var(--flagged-soft);color:var(--flagged)}.gate-tag:not(.has):not(.none){background:var(--paper-inset);color:var(--ink-3)}
-.chip{font:500 12px var(--font-num);font-style:normal;padding:2px 8px;border-radius:99px;background:var(--paper-inset);color:var(--ink-3)}.chip.ok{background:var(--cleared-soft);color:var(--cleared)}.chip.bad{background:var(--flagged-soft);color:var(--flagged)}
-.ok{color:var(--cleared)}.bad{color:var(--flagged)}
+body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#1a1f4d 0,transparent 60%),var(--midnight);color:var(--text);font:15px/1.55 var(--f-body);min-height:100vh}
+h1,h2,h3{font-family:var(--f-head);letter-spacing:-.02em;line-height:1.12;margin:0}h2{font-size:22px}h3{font-size:16px;margin-bottom:8px}.sp{margin-top:20px}
+p{margin:0 0 8px}small{color:var(--text-3);font-size:12.5px}.num{font-variant-numeric:tabular-nums}b{font-weight:600}
+.hint{color:var(--text-3);font-size:13px}.lead{color:var(--text-2)}.ok{color:var(--ok)}.bad{color:var(--bad)}em{font-style:normal;font-size:12px}
+.ic{width:20px;height:20px;flex:none}.av{border-radius:50%;flex:none}
+button{font:inherit;color:inherit;cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible,.opt:has(input:focus-visible){outline:2px solid var(--violet);outline-offset:2px}
+/* top bar */
+.top{display:flex;align-items:center;gap:24px;padding:12px 24px;border-bottom:1px solid var(--line);background:rgb(9 12 26 / .8);backdrop-filter:blur(14px);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;font:700 17px/1.05 var(--f-head)}.brand .ic{width:30px;height:30px;color:var(--violet)}.brand.big{font-size:22px}
+.tag{margin:0;padding-left:24px;border-left:1px solid var(--line-2);color:var(--text-3);font-size:13px;line-height:1.3}
+.rounds{display:flex;gap:6px;list-style:none;margin:0 auto;padding:0}
+.rounds li{display:flex;align-items:center;gap:10px;padding:4px 14px 4px 4px;border-radius:99px;font-size:13px}.rounds b{display:block;line-height:1.1}.rounds small{font-size:11.5px}
+.rn{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line-2);font:600 13px var(--f-body);color:var(--text-3)}.rn .ic{width:15px;height:15px}
+.rounds .now .rn{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 0 0 4px var(--violet-soft)}.rounds .locked{opacity:.55}
+.icon{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel);transition:border-color .15s}.icon:hover{border-color:var(--violet)}
+.me{display:flex;align-items:center;gap:10px;padding-left:20px;border-left:1px solid var(--line-2)}.me b{display:block;line-height:1.1}
+/* shell */
+.shell{display:grid;grid-template-columns:216px minmax(0,1fr);min-height:calc(100vh - 66px)}
+.rail{background:var(--rail);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:66px;height:calc(100vh - 66px)}
+.nav{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;background:none;border-radius:var(--r-sm);color:var(--text-2);text-align:left;transition:background-color .15s,color .15s}
+.nav:hover{background:var(--panel);color:var(--text)}.nav.on{background:linear-gradient(90deg,var(--violet-soft),transparent);color:#fff;box-shadow:inset 3px 0 var(--violet)}
+.promo{margin-top:auto;text-align:center;padding:12px 6px}.promo .cart{width:112px;opacity:.95}.promo b{display:block;font:700 18px var(--f-head)}.linkb{display:block;margin:10px auto 0;background:none;border:0;color:var(--text-3);font-size:12px;text-decoration:underline}
+main{padding:24px 28px 72px;min-width:0;display:flex;flex-direction:column;gap:18px}.pagehead h1{font-size:28px}
+/* meters (reference: four tiles with icon, value, bar) */
+.meters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 8px}
+.mtr{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:0 18px;border-left:1px solid var(--line)}.mtr:first-child{border-left:0}
+.tile{display:grid;place-items:center;width:56px;height:56px;border-radius:14px;border:1px solid var(--line-2)}.tile .ic{width:26px;height:26px}
+.mtr.revenue .tile{background:rgb(55 215 131 / .13);color:var(--rev)}.mtr.trust .tile{background:rgb(77 166 255 / .13);color:var(--trust)}.mtr.morale .tile{background:rgb(167 139 250 / .14);color:var(--morale)}.mtr.risk .tile{background:rgb(255 93 112 / .13);color:var(--risk)}
+.mv{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.mv b{font:700 30px var(--f-head)}.mv span{color:var(--text-2);font-size:14px}.mtr small{align-self:end}
+.track{position:relative;height:8px;background:rgb(255 255 255 / .08);border-radius:99px;margin-top:6px}.track .fill{display:block;height:100%;border-radius:99px;background:var(--violet);transform-origin:left;transform:scaleX(var(--to));animation:grow .6s var(--out)}
+.mtr.revenue .fill{background:var(--rev)}.mtr.trust .fill{background:var(--trust)}.mtr.morale .fill{background:var(--morale)}.mtr.risk .fill,.fill.risk{background:var(--risk)}
+.fill.ghost{background-image:repeating-linear-gradient(45deg,transparent 0 5px,rgb(0 0 0 / .25) 5px 10px);opacity:.8}.start{position:absolute;top:-3px;width:2px;height:14px;background:#fff;opacity:.45;border-radius:1px}@keyframes grow{from{transform:scaleX(0)}}
+.chip{font:600 12px var(--f-body);font-style:normal;padding:2px 9px;border-radius:99px;background:rgb(255 255 255 / .08);color:var(--text-2)}.chip.ok{background:rgb(61 220 151 / .14);color:var(--ok)}.chip.bad{background:rgb(255 107 125 / .15);color:var(--bad)}.chip.warn{background:var(--gate-soft);color:var(--gate)}
+/* cards + layout */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;min-width:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.two.wide{grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr)}.split{display:grid;grid-template-columns:minmax(250px,.75fr) minmax(0,2.5fr);gap:18px;align-items:start}.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.hero{display:flex;justify-content:space-between;align-items:center;gap:20px;background:linear-gradient(120deg,var(--panel-2),var(--panel));flex-wrap:wrap}.hero small{color:var(--violet)}.hero h2{font-size:26px;margin:4px 0 6px}.hero p{color:var(--text-2);margin:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}.kpi small{display:block}.kpi b{display:block;font:700 34px var(--f-head);margin:2px 0}.kpi span{font-size:13px;color:var(--text-3)}
+.row{display:flex;align-items:center;gap:12px;padding:8px 0}.row .grow{flex:1}.row small{display:block}.empty{text-align:center;padding:48px 24px}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}.ch p{color:var(--text-2);margin:4px 0 0}.ch small{color:var(--violet)}
+.brief .kick{display:flex;gap:12px;align-items:center;color:var(--text-3)}.brief .kick b{color:var(--violet);font-size:18px}.brief h2{font-size:28px;margin:6px 0 10px}.brief p{color:var(--text-2)}
+.art{width:100%;border-radius:var(--r-sm);margin:8px 0;border:1px solid var(--line)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin:8px 0}
+.facts>div{background:var(--panel-2);padding:10px 12px;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center}.facts .ic{grid-row:span 2;color:var(--text-3)}.facts b{font-size:17px}.facts small{line-height:1.2}
+.alert{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-sm);background:rgb(255 93 112 / .1);border:1px solid rgb(255 93 112 / .3)}.alert .ic{color:var(--bad);margin-top:2px}.alert p{margin:0;font-size:14px}
+.alert.ok{background:rgb(61 220 151 / .1);border-color:rgb(61 220 151 / .3)}.alert.ok .ic{color:var(--ok)}
+/* approach cards (reference: four tall cards) */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.opt{position:relative;display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--panel-2);cursor:pointer;transition:border-color .15s,transform .12s,background-color .15s}
+.opt:hover{border-color:var(--violet);transform:translateY(-2px)}.opt.on{border-color:var(--violet);background:linear-gradient(180deg,var(--violet-soft),var(--panel-2));box-shadow:0 0 0 1px var(--violet),0 10px 30px -12px var(--violet)}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}.oh{display:flex;gap:12px;align-items:center}.oh b{font:700 17px var(--f-head);display:block}.oh small{font-size:11.5px}.opt p{color:var(--text-2);font-size:13.5px;margin:0;min-height:56px}
+.oi{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgb(255 255 255 / .06)}.oi.agent{background:var(--violet-soft);color:var(--violet)}.oi.genai{background:rgb(77 166 255 / .14);color:var(--trust)}.oi.agentic{background:rgb(255 93 112 / .14);color:var(--risk)}
+.cost{display:grid;grid-template-columns:1fr auto;gap:6px 8px;padding:10px 12px;background:rgb(0 0 0 / .22);border-radius:var(--r-sm);font-size:13px;color:var(--text-2)}.cost b{text-align:right;color:var(--text)}
+.imp small{display:block;margin-bottom:4px;color:var(--text)}.imp>div{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--text-2)}
+.pick{margin-top:auto;text-align:center;padding:9px;border-radius:var(--r-sm);border:1px solid var(--line-2);font-weight:600;font-size:14px}.opt.on .pick{background:linear-gradient(180deg,var(--violet),var(--violet-2));border-color:var(--violet)}
+.why.card{display:flex;align-items:center;gap:16px;margin-top:14px}.why.card p{margin:0;color:var(--text-2);font-size:13.5px}.wi{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--violet-soft);color:var(--violet);flex:none}.why.card .btn{margin-left:auto;flex:none}
+.card.why{align-items:center}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 18px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:var(--panel-2);font-weight:600;transition:filter .15s,transform .1s,border-color .15s;margin:2px 8px 2px 0}
+.btn:hover{border-color:var(--violet)}.btn:active{transform:scale(.98)}.btn:disabled{opacity:.4;pointer-events:none}.btn.wide{width:100%;margin:0}
+.btn.primary{background:linear-gradient(180deg,var(--violet),var(--violet-2));border-color:var(--violet);color:#fff}.btn.primary:hover{filter:brightness(1.1)}.btn.danger{border-color:rgb(255 107 125 / .6);color:var(--bad);background:transparent}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}.actions.end{justify-content:flex-end}
+.ic{display:block}.btn .ic{width:17px;height:17px}
 /* levers */
-.lever{padding:var(--s4) 0;border-top:1px solid var(--line)}.lever:first-of-type{border-top:0}
-.lh{display:flex;justify-content:space-between;gap:var(--s4);align-items:flex-start}.lh p{color:var(--ink-3);font-size:13px;margin:2px 0 0}
-.if{margin:var(--s2) 0 0;padding:var(--s2) var(--s3);background:var(--paper-inset);border-radius:var(--r-sm);font-size:13px;color:var(--ink-2)}.if b{font-family:var(--font-num)}
-.sw{flex:none;width:48px;height:28px;border-radius:99px;border:1px solid var(--line-strong);background:#cfc9ba;padding:2px;cursor:pointer;transition:background-color .15s var(--ease)}
-.sw span{display:block;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s var(--ease)}.sw[aria-checked=true]{background:var(--stamp);border-color:var(--stamp)}.sw[aria-checked=true] span{transform:translateX(20px)}
-.seg{display:flex;gap:var(--s2);margin-top:var(--s2);flex-wrap:wrap}
-.seg button{flex:1;min-width:92px;min-height:44px;text-align:left;padding:var(--s2) var(--s3);border-radius:var(--r-sm);border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);cursor:pointer;font:inherit;transition:border-color .15s,background-color .15s}
-.seg button b{display:block;font:500 14px var(--font-num)}.seg button small{font-size:12px}.seg button:hover{border-color:var(--stamp)}
-.seg button[aria-checked=true]{background:var(--stamp-soft);border-color:var(--stamp);box-shadow:0 0 0 1px var(--stamp)}
-/* gates */
-.gates{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}.gate{background:var(--paper-inset);border:1px solid var(--line);border-radius:var(--r);padding:var(--s4)}.gate.wide{grid-column:1/-1;background:var(--marigold-soft);border-color:rgb(232 162 26 / .5)}
-.gh{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2)}.gh .chip{margin-left:auto}.gh b{font:700 16px var(--font-head)}
-.desk{font:500 11px var(--font-num);letter-spacing:.06em;text-transform:uppercase;background:var(--marigold);color:#2b1d00;border-radius:4px;padding:2px 6px}
-.gate p{font-size:13px;color:var(--ink-2)}.grp{display:grid;grid-template-columns:150px 1fr 44px;gap:var(--s2);align-items:center;font-size:13px;margin:var(--s1) 0}
-/* tracks */
-.track{position:relative;height:8px;background:rgb(60 50 30 / .1);border-radius:99px;overflow:hidden}
-.fill{display:block;height:100%;background:var(--stamp);border-radius:99px;transform-origin:left;transform:scaleX(var(--to));animation:grow .5s var(--ease-out)}
-.fill.risk{background:var(--flagged)}.fill.ghost{background:repeating-linear-gradient(45deg,var(--stamp) 0 6px,#6f7fd8 6px 12px);opacity:.75}
-@keyframes grow{from{transform:scaleX(var(--from))}}
-.board .track{overflow:visible}.start{position:absolute;top:-3px;width:2px;height:14px;background:var(--ink);opacity:.5;border-radius:1px}
-/* buttons + stamp */
-.btn{font:600 14px var(--font-body);min-height:44px;padding:var(--s2) var(--s4);border-radius:var(--r-sm);border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);cursor:pointer;margin:var(--s1) var(--s2) var(--s1) 0;transition:filter .15s,transform .1s}
-.btn:hover{filter:brightness(.95)}.btn:active{transform:scale(.98)}.btn.primary{background:var(--stamp);border-color:var(--stamp);color:#fff}.btn.danger{border-color:var(--flagged);color:var(--flagged);background:var(--paper)}
-button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
-.hint{font-size:13px;color:var(--ink-3)}.confirm{border:1px solid var(--flagged);border-radius:var(--r-sm);padding:var(--s3);background:var(--paper)}
-.offer{display:flex;gap:var(--s6);align-items:center;flex-wrap:wrap}.sheet{background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;padding:var(--s4) var(--s6);min-width:220px;box-shadow:0 1px 2px rgb(60 50 30 / .12)}.sheet b{display:block;font:700 18px var(--font-head)}
-.stamp{border:3px solid var(--stamp);color:var(--stamp);font:700 22px var(--font-head);letter-spacing:.12em;padding:var(--s2) var(--s4);border-radius:6px;transform:rotate(-6deg);text-align:center}.stamp small{display:block;font:500 11px var(--font-num);letter-spacing:.02em;color:var(--stamp)}
-.stamp.enter{animation:stamp .35s var(--ease-out)}@keyframes stamp{from{opacity:0;transform:rotate(-6deg) scale(1.7)}}
-/* board */
-.board{position:sticky;top:var(--s4);background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:var(--s4) var(--s4) var(--s3)}.board h2{font-size:15px;margin-bottom:var(--s3)}
-.meter{margin-bottom:var(--s3)}.mh{display:flex;align-items:center;gap:var(--s2);margin-bottom:6px;font-size:13px}.mh b{margin-left:auto;font-size:16px}
-.score{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:var(--s3);margin:var(--s4) 0 var(--s3)}.score b{font-size:30px}
-.budget{margin-bottom:var(--s3)}
-/* result */
-.why{margin:0;padding-left:var(--s4);color:var(--ink-2)}.why li{margin-bottom:var(--s1)}
-.cmp>div{display:grid;grid-template-columns:120px 1fr 36px;gap:var(--s2);align-items:center;padding:var(--s1) var(--s2);border-radius:var(--r-sm);font-size:13px}.cmp .me{background:var(--stamp-soft);font-weight:600}
-.talk{background:var(--paper-inset);border-radius:var(--r-sm);padding:var(--s3) var(--s4);font-size:14px}
-.enter{animation:rise .25s var(--ease-out)}@keyframes rise{from{opacity:0;transform:translateY(8px)}}
-@media(max-width:900px){.layout{grid-template-columns:1fr}.board{position:static;order:-1}.gates{grid-template-columns:1fr}.grp{grid-template-columns:110px 1fr 40px}}
+.lever{padding:16px 0;border-top:1px solid var(--line)}.lever:first-of-type{border-top:0}.lh{display:flex;justify-content:space-between;gap:16px}.lever p,.lh p{color:var(--text-3);font-size:13px;margin:2px 0 0}
+.if{margin:10px 0 0!important;padding:9px 12px;background:rgb(0 0 0 / .22);border-radius:var(--r-sm);font-size:13px!important;color:var(--text-2)!important}.if b{color:var(--text)}.if b.ok{color:var(--ok)}.if b.bad{color:var(--bad)}
+.sw{flex:none;width:50px;height:28px;border-radius:99px;border:1px solid var(--line-2);background:#2a3057;padding:2px;transition:background-color .15s}.sw span{display:block;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s var(--ease)}
+.sw[aria-checked=true]{background:var(--violet);border-color:var(--violet)}.sw[aria-checked=true] span{transform:translateX(22px)}
+.seg{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.seg button{flex:1;min-width:92px;min-height:46px;text-align:left;padding:8px 12px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:var(--panel-2)}
+.seg button b{display:block}.seg button:hover{border-color:var(--violet)}.seg button[aria-checked=true]{background:var(--violet-soft);border-color:var(--violet);box-shadow:0 0 0 1px var(--violet)}
+/* steps */
+.steps{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:14px}.steps li{display:flex;gap:14px;align-items:flex-start;opacity:.5}.steps li.done,.steps li.now{opacity:1}
+.dot{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line-2);font:600 13px var(--f-body);flex:none}.dot .ic{width:15px;height:15px}.steps .done .dot{background:rgb(61 220 151 / .15);border-color:var(--ok);color:var(--ok)}.steps .now .dot{border-color:var(--violet);box-shadow:0 0 0 4px var(--violet-soft)}
+.steps p{margin:2px 0 0;color:var(--text-2);font-size:14px}.steps.h{flex-direction:row;gap:0;margin:16px 0}.steps.h li{flex:1;flex-direction:column;align-items:center;text-align:center;position:relative;gap:6px}.steps.h li+li::before{content:"";position:absolute;top:16px;right:50%;width:100%;height:2px;background:var(--line-2);z-index:0}.steps.h li.done+li::before,.steps.h li.now::before{background:var(--ok)}.steps.h .dot{position:relative;z-index:1;background:var(--panel)}.steps.h li.done .dot{background:#12352a}
+.typing{display:inline-flex;gap:4px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--violet);animation:blink 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}@keyframes blink{50%{opacity:.2}}
+/* days + desk (first person) */
+.days{display:flex;gap:8px;list-style:none;margin:0;padding:0}.days li{flex:1;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r-sm);background:var(--panel);border:1px solid var(--line);color:var(--text-3);font-size:14px}
+.days li b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:rgb(255 255 255 / .07);font-size:12px}.days .now{border-color:var(--violet);color:var(--text);background:var(--violet-soft)}.days .done{color:var(--ok)}.days .ic{width:18px;height:18px}
+.msg{display:flex;gap:12px;align-items:flex-start;margin:16px 0 8px;animation:rise .3s var(--out)}.msg .bub{background:var(--panel-2);border:1px solid var(--line);border-radius:4px 16px 16px 16px;padding:12px 16px;max-width:640px}.msg .bub p{margin:4px 0 0;color:var(--text-2)}.bub small{margin-left:6px}
+.msg.me{justify-content:flex-end}.msg.me .bub{background:linear-gradient(180deg,var(--violet),var(--violet-2));border-radius:16px 4px 16px 16px;border-color:var(--violet)}.msg.me .bub p,.msg.me .bub b{color:#fff}
+.av.bot,span.av.bot{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--violet-soft);color:var(--violet);flex:none}
+.you{display:flex;flex-direction:column;gap:8px;margin:8px 0 0 54px;align-items:flex-start}.reply{min-height:44px;text-align:left;padding:10px 16px;border-radius:99px;border:1px solid var(--line-2);background:transparent;color:var(--text);transition:border-color .15s,background-color .15s}
+.reply:hover:not(:disabled){border-color:var(--violet);background:var(--violet-soft)}.reply:disabled{opacity:.45;pointer-events:none}.reply.on{opacity:1}
+.note{margin:6px 0 0 54px;font-size:13.5px;color:var(--text-2);border-left:2px solid var(--gate);padding-left:12px}
+.gates{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.gate{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:16px}.gate.wide{grid-column:1/-1;background:var(--gate-soft);border-color:rgb(242 184 75 / .4);margin-top:12px}
+.gate>b{font:700 16px var(--f-head);margin-right:8px;vertical-align:middle}.gate .chip{float:right}.gate p{font-size:13px;color:var(--text-2);margin:8px 0}.desk{display:inline-block;font:600 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;background:var(--gate);color:#2b1d00;border-radius:5px;padding:2px 7px;margin-right:8px;vertical-align:middle}
+.grp{display:grid;grid-template-columns:140px 1fr 42px;gap:10px;align-items:center;font-size:13px;margin:6px 0}.grp .track{margin:0}
+.offer{display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-top:10px}.sheet{background:#fffdf5;color:#1d1a12;border-radius:6px;padding:14px 22px;min-width:220px;box-shadow:0 8px 24px -10px #000}.sheet b{display:block;font:700 19px var(--f-head)}.sheet small{color:#6c6450}
+.stamp{border:3px solid var(--violet);color:#b9a6ff;font:700 24px var(--f-head);letter-spacing:.12em;padding:8px 18px;border-radius:7px;transform:rotate(-6deg);text-align:center}.stamp small{display:block;font:500 11px var(--f-body);letter-spacing:.02em;color:#b9a6ff}.stamp.enter{animation:stamp .4s var(--out)}
+@keyframes stamp{from{opacity:0;transform:rotate(-6deg) scale(1.8)}}.confirm{border:1px solid var(--bad);border-radius:var(--r-sm);padding:14px;margin-top:8px;background:rgb(255 93 112 / .07)}
+.tl{align-self:start;position:sticky;top:90px}.tl ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}.tl li{display:flex;gap:10px;align-items:flex-start;color:var(--text-3);font-size:13.5px}.tl li.done{color:var(--text)}.tl .ic{color:var(--ok);width:17px;height:17px}.tl .o{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--line-2);flex:none}
+/* debrief */
+.scorebig{text-align:right}.scorebig b{display:block;font:700 54px/1 var(--f-head);color:var(--violet)}.badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:var(--gate-soft);color:var(--gate);font-weight:600;font-size:13px}.badge .ic{width:15px;height:15px}.badge.sm{padding:2px 9px;font-size:12px;margin-right:4px}
+.why li,ul.why li{margin-bottom:8px;color:var(--text-2)}ul.why{padding-left:18px;margin:0}.talk{background:rgb(0 0 0 / .25);border-left:3px solid var(--violet);padding:12px 16px;border-radius:0 var(--r-sm) var(--r-sm) 0}
+.chart{position:relative;margin-top:10px}.table{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;color:var(--text-3);font-weight:500;font-size:12.5px;padding:8px 10px;border-bottom:1px solid var(--line-2)}td{padding:10px;border-bottom:1px solid var(--line)}tr.sample td{color:var(--text-3)}.th{background:none;border:0;color:inherit;font:inherit;padding:0}.th:hover{color:var(--text)}
+.who{display:flex;align-items:center;gap:10px}.who.big{margin:8px 0 14px}.who.big small{display:block}.ringrow{display:flex;gap:18px;justify-content:space-around;margin:8px 0}.ringw{position:relative;width:96px;text-align:center}.ringw svg{width:96px}.ringw b{position:absolute;top:30px;left:0;right:0;font:700 18px var(--f-head)}.ringw small{display:block;font-size:11.5px;line-height:1.25;margin-top:2px}
+/* forms */
+.field{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--line)}.field.col{flex-direction:column;align-items:stretch;gap:8px}.field small{display:block}
+.text{width:100%;min-height:44px;padding:10px 14px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:rgb(0 0 0 / .25);color:var(--text);font:inherit}textarea.text{resize:vertical}.text:focus{border-color:var(--violet)}
+.stepper{display:flex;align-items:center;gap:6px;background:rgb(0 0 0 / .25);border:1px solid var(--line-2);border-radius:99px;padding:3px}.stepper button{width:36px;height:36px;border-radius:50%;border:0;background:var(--panel-3);font-size:18px}.stepper button:hover{background:var(--violet)}.stepper b{min-width:64px;text-align:center;font-size:16px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chipb{min-height:40px;padding:7px 15px;border-radius:99px;border:1px solid var(--line-2);background:transparent;transition:border-color .15s,background-color .15s}.chipb:hover{border-color:var(--violet)}.chipb.on{background:var(--violet-soft);border-color:var(--violet);color:#fff}
+.jobcard{display:flex;flex-direction:column;gap:4px;padding:14px;border:1px dashed var(--line-2);border-radius:var(--r-sm);position:relative}.jobcard .chip{position:absolute;top:12px;right:12px}.job .facts{grid-template-columns:repeat(3,1fr)}
+.personas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}.persona{display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--panel-2)}.persona p{font-size:13.5px;color:var(--text-2);flex:1}
+.challenge{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}.challenge .btn{margin-top:10px}
+/* login */
+.login{display:grid;grid-template-columns:1.2fr 1fr;min-height:100vh;gap:0}.lhero{padding:56px 6vw;display:flex;flex-direction:column;justify-content:center;gap:22px;background:radial-gradient(800px 500px at 20% 20%,#2a2170 0,transparent 60%)}
+.lhero h1{font-size:clamp(34px,4.6vw,58px);max-width:15ch}.lhero p{color:var(--text-2);font-size:18px;max-width:46ch}.lstats{display:flex;gap:32px}.lstats b{display:block;font:700 34px var(--f-head);color:var(--violet)}
+.lcard{margin:auto;width:min(440px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line-2);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:6px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.seg2 button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--panel-2);text-align:left;min-height:96px}.seg2 [aria-selected=true]{border-color:var(--violet);background:var(--violet-soft);box-shadow:0 0 0 1px var(--violet)}.seg2 .ic{color:var(--violet)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--panel-3);border:1px solid var(--violet);padding:12px 20px;border-radius:99px;box-shadow:0 12px 30px -10px #000;animation:rise .25s var(--out);z-index:50}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}.toast{animation-name:toastin}@keyframes toastin{from{opacity:0;transform:translate(-50%,10px)}}
+@media(max-width:1100px){.meters{grid-template-columns:1fr 1fr;gap:14px 0}.mtr:nth-child(3){border-left:0}.split,.two,.two.wide{grid-template-columns:1fr}.tl{position:static}.rounds small{display:none}}
+@media(max-width:860px){.icon[aria-label=Notifications],.me>div{display:none}.me{padding-left:0;border:0}.top{padding:10px 14px}.tag,.rounds{display:none}.top{justify-content:space-between}.shell{grid-template-columns:1fr}.rail{position:static;height:auto;flex-direction:row;overflow-x:auto;padding:8px}.promo{display:none}.nav span{white-space:nowrap}.login{grid-template-columns:1fr}.gates{grid-template-columns:1fr}.days{flex-wrap:wrap}.meters{grid-template-columns:1fr}.mtr{border-left:0;padding:8px 14px}main{padding:16px 14px 60px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style></head><body><div id="app"></div><script>(() => {
   // src/data/people-workforce.json
@@ -597,20 +644,6 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
   function netScore(e) {
     return e.revenue + e.trust + e.morale - e.risk;
   }
-  function availability(s, g, budget = s.shared.teamBudgetUnits) {
-    const r = s.rounds.find((x) => x.round === g.round);
-    const riskPause = g.measures.risk > s.shared.boardRule.riskAbove;
-    return r.choices.map((c) => {
-      let locked = "";
-      if (c.id !== "person" && riskPause)
-        locked = "Risk is above 75: new AI deployments are paused";
-      else if (g.budgetUsed + c.cost > budget + 0.000000001)
-        locked = "Not enough AI budget left";
-      else if (g.dataUsed + c.dataPoints > s.shared.dataAllowancePoints)
-        locked = "Customer-data allowance used up";
-      return { choice: c, net: netScore(c.effects), locked };
-    });
-  }
   function playRound(s, g, choiceId, limits = DEFAULT_LIMITS, surprise = false, hiring) {
     if (g.finished)
       throw new Error("Game is over");
@@ -781,203 +814,924 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
     return { now, carry };
   }
 
-  // src/ui/main.ts
+  // src/ui/sim.ts
   var S = people_workforce_default;
   var R1 = S.rounds[0];
-  var APPS = makeApplicants();
   var START = S.shared.start;
-  var st = {
+  var CITIES = ["Mumbai", "Pune", "Delhi", "Bengaluru", "Hyderabad", "Chennai", "Kolkata", "Ahmedabad", "Jaipur"];
+  var MKS = ["revenue", "trust", "morale", "risk"];
+  var MN = { revenue: "Revenue", trust: "Customer Trust", morale: "Employee Morale", risk: "Risk Exposure" };
+  var clamp2 = (v) => Math.max(0, Math.min(100, v));
+  var DEFAULT_SCENARIO = { title: R1.title, vacancies: 600, cities: 9, applications: 8400, recruiters: 12, crisis: true, published: false, by: "" };
+  var PERSONAS = [
+    { name: "Priya Nair", city: 1, gender: "F", lowIncomePin: false, age: 29, gapMonths: 14, distanceKm: 6, availableDay: 2, id_check: "ok", story: "Back after a 14-month career break to care for family. Fast and careful, and wants steady shifts." },
+    { name: "Imran Qureshi", city: 2, gender: "M", lowIncomePin: true, age: 24, gapMonths: 2, distanceKm: 24, availableDay: 1, id_check: "mismatch", story: "Delivery rider living far from the store. His ID says Mohd, his application says Mohammad." },
+    { name: "Anita Rao", city: 3, gender: "F", lowIncomePin: true, age: 19, gapMonths: 0, distanceKm: 11, availableDay: 3, id_check: "unreadable", story: "First job. Her ID photo was blurry on a cheap phone, and she can start from Day 3." }
+  ];
+  var newPlay = (sc) => ({
+    day: 1,
+    step: 0,
     choice: "",
-    lim: { ...DEFAULT_HIRING_LIMITS },
     decision: "",
     confirm: false,
-    demo: false,
-    seen: new Set,
-    prev: { ...START }
+    saved: false,
+    started: Date.now(),
+    log: [],
+    lim: { ...DEFAULT_HIRING_LIMITS, reviewCapacity: Math.min(12, sc.recruiters) * 20 }
+  });
+  var CASES = {
+    id: [
+      { key: "desk", label: "Send it to the ID desk and verify at joining", fx: { trust: 1 }, npc: { anil: 5 }, note: "He keeps his place and a person checks his papers. Slower for you, fair to him." },
+      { key: "reject", label: "Reject: the names do not match", fx: { trust: -1, risk: 2 }, npc: { anil: -6 }, note: "A spelling mismatch costs a good picker, and this is the exclusion pattern regulators notice." },
+      { key: "accept", label: "Accept it without checking", fx: { revenue: 1, risk: 3 }, npc: { anil: -8 }, note: "Fast, but an unchecked ID is exactly the legal risk the sheet warns about." }
+    ],
+    meera: [
+      { key: "comply", label: "Fine. Take the nearest 600.", fx: { revenue: 1, trust: -1, risk: 2 }, npc: { meera: 8, anil: -6 }, note: "This switches off pin-code balancing, so the fairness gate will probably block your offers." },
+      { key: "refuse", label: "Not at the cost of fairness.", fx: {}, npc: { meera: -8, anil: 6 }, note: "Meera is unhappy. Dr. Rao notices you held the line." },
+      { key: "compromise", label: "I will widen the shortlist and keep the quotas.", fx: { revenue: 1 }, npc: { meera: 3, anil: 3 }, note: "More names on the list covers no-shows without dropping the fairness quota." }
+    ],
+    challenge: [
+      { key: "reinstate", label: "Review the file myself and reinstate", fx: { trust: 2, risk: -1, morale: 1 }, npc: { anil: 8 }, note: "A person looked, and the applicant gets a real answer." },
+      { key: "uphold", label: "Uphold it, and send a written reason", fx: {}, npc: { anil: 2 }, note: "The decision stands, but the applicant is told why." },
+      { key: "ignore", label: "Ignore it. We have no time.", fx: { trust: -2, risk: 2 }, npc: { anil: -10 }, note: "A challenged rejection must stay with a person. This is how a post goes viral." }
+    ]
   };
-  var $ = (id) => document.getElementById(id);
-  var pct = (x) => Math.round(x * 100) + "%";
-  var sgn = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n);
-  var MK = ["revenue", "trust", "morale", "risk"];
-  var MN = { revenue: "Revenue", trust: "Customer trust", morale: "Staff morale", risk: "Risk" };
-  var enter = (k) => st.seen.has(k) ? "" : (st.seen.add(k), "enter");
-  var cache = new Map;
-  function evalLim(l) {
-    const k = JSON.stringify(l);
-    let v = cache.get(k);
+  var poolCache = new Map;
+  var REAL = 1e6;
+  function buildPool(sc, cands) {
+    const k = sc.applications + ":" + sc.cities;
+    let base = poolCache.get(k);
+    if (!base) {
+      base = makeApplicants(11, sc.applications, sc.cities);
+      poolCache.set(k, base);
+    }
+    const real = cands.filter((c) => c.city < sc.cities).map((c, i) => ({
+      id: REAL + i,
+      city: c.city,
+      gender: c.gender,
+      lowIncomePin: c.lowIncomePin,
+      age: c.age,
+      gapMonths: c.gapMonths,
+      distanceKm: c.distanceKm,
+      availableDay: c.availableDay,
+      id_check: c.id_check
+    }));
+    const realMap = new Map;
+    cands.filter((c) => c.city < sc.cities).forEach((c, i) => realMap.set(REAL + i, c));
+    return { pool: [...base, ...real], realMap };
+  }
+  var runCache = new Map;
+  function evalRun(sc, cands, lim) {
+    const k = JSON.stringify([sc.applications, sc.cities, sc.vacancies, cands.map((c) => [c.id, c.availableDay, c.city, c.distanceKm]), lim]);
+    let v = runCache.get(k);
     if (!v) {
-      const run = runHiringAgent(APPS, 600, 9, l);
-      v = { run, out: simulateOutcome(run) };
-      cache.set(k, v);
+      const run = runHiringAgent(buildPool(sc, cands).pool, sc.vacancies, sc.cities, lim);
+      v = { run, out: simulateOutcome(run, sc.cities) };
+      runCache.set(k, v);
+      if (runCache.size > 60)
+        runCache.clear();
     }
     return v;
   }
-  var peek = (patch) => evalLim({ ...st.lim, ...patch });
-  function outcome(choice, decision) {
-    const base = newGame(S);
-    if (choice !== "agent")
-      return { g: playRound(S, base, choice) };
-    const { run, out } = evalLim(st.lim);
-    const d = decision || (run.fairness.passed ? "approve" : "hold");
-    const sent = d === "hold" ? 0 : sendOffers({ ...run, audit: [] }, "Recruiter R. Sen", run.shortlist.map((a) => a.id), d === "signoff" ? "HR Lead" : undefined).length;
-    const mods = hiringModifiers(run, out, d === "signoff");
-    return { g: playRound(S, base, "agent", undefined, false, mods), run, out, d, mods, sent };
+  function lastRunFor(sc, cands, lim, stage) {
+    const { run } = evalRun(sc, cands, lim), { realMap } = buildPool(sc, cands);
+    const sl = new Set(run.shortlist.map((a) => a.id)), rv = new Set(run.review.map((r) => r.id)), reasons = {};
+    realMap.forEach((c, id) => {
+      if (sl.has(id) || rv.has(id))
+        return;
+      const mates = run.shortlist.filter((a) => a.city === c.city && (!lim.balancePins || a.lowIncomePin === c.lowIncomePin));
+      const day = mates.length ? Math.max(...mates.map((a) => a.availableDay)) : 0, km = mates.length ? Math.max(...mates.map((a) => a.distanceKm)) : 0;
+      reasons[c.id] = `In ${CITIES[c.city]} the agent shortlisted ${mates.length} people in your group. They could start by Day ${day} and lived within ${km} km. You could start on Day ${c.availableDay} and live ${c.distanceKm} km away. Nobody rejected you for a work gap.`;
+    });
+    const idOf = (ids) => [...ids].map((i) => realMap.get(i)?.id).filter((x) => !!x);
+    return { stage, shortlist: idOf(sl), review: idOf(rv), reasons, at: Date.now(), vacancies: sc.vacancies };
   }
-  function scoreboard() {
-    const o = st.choice ? outcome(st.choice, st.decision) : null, m = o ? o.g.measures : START;
-    const committed = st.choice && (st.choice !== "agent" || st.decision);
-    const c = st.choice ? R1.choices.find((x) => x.id === st.choice) : null;
-    const meters = MK.map((k) => {
-      const d = o ? o.g.history[0].deltas[k] : 0, good = (k === "risk" ? -d : d) >= 0;
-      return `<div class="meter"><div class="mh"><span>${MN[k]}</span><b class="num">${m[k]}</b>${o ? `<i class="chip ${d === 0 ? "" : good ? "ok" : "bad"}">${sgn(d)}</i>` : ""}</div>
-      <div class="track" role="img" aria-label="${MN[k]} ${m[k]} of 100, started at ${START[k]}"><span class="fill ${k === "risk" ? "risk" : ""} ${committed ? "" : "ghost"}" style="--from:${st.prev[k] / 100};--to:${m[k] / 100}"></span><span class="start" style="left:${START[k]}%"></span></div></div>`;
-    }).join("");
-    const over = c && c.cost > S.shared.teamBudgetUnits + 0.000000001;
-    return `<aside class="board" aria-label="Scoreboard"><h2>${committed ? "Scoreboard" : o ? "Projected scoreboard" : "Scoreboard"}</h2>
-    ${meters}
-    <div class="score"><small>Company score</small><b class="num">${o ? companyScore(o.g.measures) : companyScore(START)}</b></div>
-    <div class="budget"><div class="mh"><span>AI budget</span><b class="num">${c ? c.cost : 0} / ${S.shared.teamBudgetUnits}</b></div>
-      <div class="track"><span class="fill ${over ? "risk" : ""}" style="--from:0;--to:${Math.min(1, (c ? c.cost : 0) / S.shared.teamBudgetUnits)}"></span></div>
-      ${over ? '<p class="hint bad">Over your team’s share.</p>' : ""}</div>
-    <p class="hint">Ticks mark where each score started. The board steps in if Trust or Morale falls below ${S.shared.boardRule.trustBelow}, or Risk rises above ${S.shared.boardRule.riskAbove}.</p></aside>`;
+  function funnel(p, sc, cands) {
+    const n = sc.applications + cands.length, v = sc.vacancies, c = R1.choices.find((x) => x.id === p.choice) ?? R1.choices[2];
+    const arr = [Math.round(n * 0.45), n, n, n];
+    let screened, shortlisted, offers, filled;
+    if (p.choice === "agent") {
+      const { run, out } = evalRun(sc, cands, p.lim), sl = run.shortlist.length, sent = p.decision === "hold" ? 0 : p.day >= 3 && p.decision ? sl : 0;
+      screened = arr;
+      shortlisted = [Math.round(sl * 0.4), sl, sl, sl];
+      offers = [0, 0, sent, sent];
+      filled = [0, 0, 0, p.decision && p.decision !== "hold" ? out.filled : 0];
+    } else {
+      const cap = (p.choice === "genai" ? 1.4 : p.choice === "agentic" ? 20 : 1) * sc.recruiters * 60, fill = Math.round(v * c.staffingCoverage / 100);
+      screened = [cap, cap * 2, cap * 3, cap * 4].map((x) => Math.min(x, n));
+      shortlisted = screened.map((x) => Math.round(x * 0.12));
+      offers = [0, Math.round(fill * 0.4), fill, fill];
+      filled = [0, 0, 0, fill];
+    }
+    return { days: ["Day 1", "Day 2", "Day 3", "Day 4"], applications: arr, screened, shortlisted, offers, filled };
   }
-  function choices() {
-    const av = availability(S, newGame(S), st.demo ? 999 : S.shared.teamBudgetUnits);
-    return `<section class="step"><h2><span class="n">1</span>Who does the hiring?</h2>
-  <div class="cards" role="radiogroup" aria-label="Hiring choice">${av.map(({ choice: c, net, locked }) => {
-      const e = c.effects, no = c.humanCheckpoint === "No";
-      return `<label class="choice ${st.choice === c.id ? "on" : ""} ${locked ? "locked" : ""}">
-      <input type="radio" name="choice" data-k="choice-${c.id}" ${st.choice === c.id ? "checked" : ""} ${locked ? "disabled" : ""} onchange="act('choice','${c.id}')">
-      <b>${c.label}</b><small>${c.delegation}</small>
-      <span class="fx">${MK.map((k) => `<i class="chip ${e[k] === 0 ? "" : (k === "risk" ? -e[k] : e[k]) > 0 ? "ok" : "bad"}" title="${MN[k]}">${{ revenue: "Rev", trust: "Trust", morale: "Morale", risk: "Risk" }[k]} ${sgn(e[k])}</i>`).join("")}</span>
-      <span class="meta"><span class="gate-tag ${no ? "none" : c.id === "person" ? "" : "has"}">${no ? "No human checkpoint" : c.id === "person" ? "Human only" : "Human checkpoint"}</span><span class="num">${c.cost} units</span></span>
-      ${locked ? `<em class="bad">${locked}</em>` : ""}</label>`;
+  function badges(p, fairPassed, fill) {
+    const b = [];
+    if (p.choice === "agent" && fairPassed && p.decision === "approve")
+      b.push("Fair Hand");
+    if (p.meera === "refuse" || p.meera === "compromise")
+      b.push("Held the Line");
+    if (p.challenge === "reinstate")
+      b.push("Open Door");
+    if (p.choice && p.choice !== "agentic" && p.choice !== "person")
+      b.push("Human in Charge");
+    if (fill >= 0.95 && p.choice !== "agentic")
+      b.push("Fully Staffed");
+    return b;
+  }
+  function result(p, sc, cands) {
+    const base = newGame(S), choice = p.choice;
+    let g, run, out, d = "";
+    if (choice === "agent") {
+      ({ run, out } = evalRun(sc, cands, p.lim));
+      d = p.decision || (run.fairness.passed ? "approve" : "hold");
+      if (d !== "hold")
+        sendOffers({ ...run, audit: [] }, "recruiter", run.shortlist.map((a) => a.id), d === "signoff" ? "HR Lead" : undefined);
+      g = playRound(S, base, "agent", undefined, sc.crisis, hiringModifiers(run, out, d === "signoff"));
+    } else
+      g = playRound(S, base, choice, undefined, sc.crisis);
+    const extra = { revenue: 0, trust: 0, morale: 0, risk: 0 };
+    ["id", "meera", "challenge"].forEach((k) => {
+      const o = CASES[k].find((x) => x.key === p[k]);
+      if (o)
+        MKS.forEach((m) => extra[m] += o.fx[m] ?? 0);
+    });
+    const h = g.history[0], deltas = {}, measures = {};
+    MKS.forEach((m) => {
+      measures[m] = clamp2(g.measures[m] + extra[m]);
+      deltas[m] = measures[m] - START[m];
+    });
+    const br = S.shared.boardRule, board = measures.trust < br.trustBelow || measures.morale < br.moraleBelow || measures.risk > br.riskAbove;
+    const fill = out ? out.fillRate : (R1.choices.find((x) => x.id === choice)?.staffingCoverage ?? 0) / 100;
+    const stay = out ? out.stay30 : PERSON_BASELINE.stay30;
+    return {
+      measures,
+      deltas,
+      extra,
+      board,
+      score: companyScore(measures),
+      net: MKS.reduce((a, m) => a + (m === "risk" ? -deltas[m] : deltas[m]), 0),
+      run,
+      out,
+      d,
+      fill,
+      stay,
+      note: h.note,
+      fairness: run?.fairness.ratio ?? null,
+      badges: badges(p, run?.fairness.passed ?? null, fill)
+    };
+  }
+
+  // src/ui/store.ts
+  var KEY = "halcyon.v1";
+  var blank = () => ({ v: 1, profiles: [], scenario: { ...DEFAULT_SCENARIO }, cands: [], last: null, runs: [], npc: { meera: 50, anil: 50 }, plays: {} });
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY) ?? "null");
+      return s?.v === 1 ? s : blank();
+    } catch {
+      return blank();
+    }
+  }
+  var db = load();
+  var save = () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(db));
+    } catch {}
+  };
+  var onRemoteChange = (cb) => addEventListener("storage", (e) => {
+    if (e.key === KEY) {
+      db = load();
+      cb();
+    }
+  });
+  var reset = () => {
+    db = blank();
+    save();
+  };
+  var sid;
+  try {
+    sid = sessionStorage.getItem("halcyon.me") ?? undefined;
+  } catch {}
+  var me = () => db.profiles.find((p) => p.id === sid);
+  function signIn(role, name) {
+    const clean = name.trim().slice(0, 30) || (role === "recruiter" ? "Recruiter" : "Candidate");
+    let p = db.profiles.find((x) => x.role === role && x.name.toLowerCase() === clean.toLowerCase());
+    if (!p) {
+      p = { id: role[0] + Math.random().toString(36).slice(2, 8), role, name: clean };
+      db.profiles.push(p);
+      save();
+    }
+    sid = p.id;
+    try {
+      sessionStorage.setItem("halcyon.me", p.id);
+    } catch {}
+    return p;
+  }
+  var signOut = () => {
+    sid = undefined;
+    try {
+      sessionStorage.removeItem("halcyon.me");
+    } catch {}
+  };
+  var clampNpc = (v) => Math.max(0, Math.min(100, v));
+
+  // src/ui/ui.ts
+  var ui = { view: "", toast: "", charts: [], sort: { col: "score", dir: -1 }, tab: "", chat: {} };
+  var render = () => {};
+  var setRender = (f) => {
+    render = f;
+  };
+  var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  var pct = (x) => Math.round(x * 100) + "%";
+  var sgn = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(Math.round(n * 10) / 10);
+  var tt;
+  var toast = (m) => {
+    ui.toast = m;
+    render();
+    clearTimeout(tt);
+    tt = window.setTimeout(() => {
+      ui.toast = "";
+      render();
+    }, 2800);
+  };
+  var P = {
+    home: '<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    scenario: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    decide: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12.5l3 3 5-6"/>',
+    agent: '<rect x="4" y="8" width="16" height="11" rx="3.5"/><path d="M12 8V4M9 13.5h.01M15 13.5h.01M9.5 16.5h5"/>',
+    impact: '<path d="M4 20V11M10 20V4M16 20v-7M22 20H2"/>',
+    trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8 20h8"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+    people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3-5.5 6.5-5.5s5.9 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .6 3.2 2.4 3.5 5.2"/>',
+    bars: '<path d="M5 20v-6M12 20V6M19 20v-10"/>',
+    heart: '<path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16h.01"/>',
+    spark: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',
+    net: '<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5L6 17M12 11.5l6 5.5"/>',
+    chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    cart: '<path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/>',
+    out: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+    pin: '<path d="M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+    doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+    send: '<path d="M4 12l16-8-6 16-3-7z"/>'
+  };
+  var ic = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] ?? ""}</svg>`;
+  var MIC = { revenue: "bars", trust: "people", morale: "heart", risk: "shield" };
+  var CIC = { person: "user", genai: "spark", agent: "agent", agentic: "net" };
+  function avatar(seed, size = 40) {
+    let h = 0;
+    for (const c of seed)
+      h = h * 31 + c.charCodeAt(0) >>> 0;
+    const skin = ["#f3cfae", "#dba577", "#b97c52", "#8d5d3e"][h % 4], hair = ["#15151f", "#2e2018", "#51331f", "#7b5233"][(h >>> 2) % 4];
+    const [a, b] = [["#5b3df5", "#9b7cf6"], ["#0ea5a4", "#4aa3ff"], ["#d64582", "#f2a65a"], ["#2f9e6e", "#7ee7b8"]][(h >>> 4) % 4], st = (h >>> 6) % 3, id = "g" + h % 9973;
+    const hairP = st === 0 ? '<path d="M15 26c0-10 4-15 9-15s9 5 9 15c-2.5-5-5.5-6.5-9-6.5S17.5 21 15 26z" />' : st === 1 ? '<path d="M14 29c-2-12 4-18 10-18s12 6 10 18c-1-3-2-5-3-6-4-3-10-3-14 0-1 1-2 3-3 6z"/><rect x="12" y="24" width="4.5" height="13" rx="2.2"/><rect x="31.5" y="24" width="4.5" height="13" rx="2.2"/>' : '<path d="M15 25c1-8 5-12 9-12s8 4 9 12c-3-4-6-5-9-5s-6 1-9 5z"/>';
+    return `<svg class="av" width="${size}" height="${size}" viewBox="0 0 48 48" role="img" aria-label="${esc(seed)}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
+    <circle cx="24" cy="24" r="24" fill="url(#${id})"/><path d="M6 44c1-8 8-11 18-11s17 3 18 11a24 24 0 0 1-36 0z" fill="#1a1d36"/><rect x="21" y="28" width="6" height="6" rx="2" fill="${skin}"/><ellipse cx="24" cy="23" rx="7.5" ry="8.5" fill="${skin}"/><g fill="${hair}">${hairP}</g></svg>`;
+  }
+  function meterRow(v, d, ghost = false) {
+    return `<section class="meters" aria-label="Company measures">${MKS.map((k) => {
+      const dd = d ? d[k] - 0 : 0, good = (k === "risk" ? -dd : dd) >= 0;
+      return `<div class="mtr ${k}"><span class="tile">${ic(MIC[k])}</span><div><div class="mv"><b class="num">${v[k]}</b><span>${MN[k]}</span>${d && dd !== 0 ? `<i class="chip ${good ? "ok" : "bad"}">${sgn(dd)}</i>` : ""}</div>
+      <div class="track"><span class="fill ${ghost ? "ghost" : ""}" style="--to:${v[k] / 100}"></span><span class="start" style="left:${START[k]}%"></span></div></div><small>/100</small></div>`;
+    }).join("")}</section>`;
+  }
+  function chartSlot(id, cfg, h = 230) {
+    ui.charts.push({ id, cfg });
+    return `<div class="chart" style="height:${h}px"><canvas id="${id}" role="img" aria-label="${esc(cfg.aria ?? id)}"></canvas></div>`;
+  }
+  var gate = (n) => `<span class="desk">${n}</span>`;
+  var ring = (v, label, color) => `<div class="ringw"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" fill="none" stroke="rgb(255 255 255 / .08)" stroke-width="3"/><circle cx="18" cy="18" r="15.5" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${Math.round(v * 97.4)} 97.4" transform="rotate(-90 18 18)"/></svg><b class="num">${pct(v)}</b><small>${esc(label)}</small></div>`;
+
+  // src/ui/recruiter.ts
+  var sc = () => db.scenario;
+  var playOf = () => {
+    const m = me();
+    return m ? db.plays[m.id] : undefined;
+  };
+  var nCands = () => db.cands.filter((c) => c.city < sc().cities).length;
+  var art = `<svg viewBox="0 0 360 150" class="art" aria-hidden="true"><defs><linearGradient id="belt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#303663"/><stop offset="1" stop-color="#151934"/></linearGradient></defs>
+<rect width="360" height="150" fill="#0d1127"/><g stroke="#2a3060" opacity=".6">${[20, 50, 80].map((y) => `<path d="M0 ${y}H360"/>`).join("")}${[40, 120, 200, 280].map((x) => `<path d="M${x} 0V70"/>`).join("")}</g>
+<polygon points="0,102 360,82 360,124 0,150" fill="url(#belt)"/><g>${[[24, 84], [88, 80], [160, 74], [238, 68], [300, 64]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="36" height="28" rx="3" fill="${i % 2 ? "#c99556" : "#b68446"}"/><rect x="${x + 15}" y="${y}" width="6" height="28" fill="#e8c78d" opacity=".7"/>`).join("")}</g>
+<g>${[[60, 70], [200, 58], [330, 52]].map(([x, y]) => `<circle cx="${x}" cy="${y - 14}" r="6" fill="#e2b48c"/><rect x="${x - 8}" y="${y - 7}" width="16" height="24" rx="6" fill="#f2b84b"/><rect x="${x - 8}" y="${y + 2}" width="16" height="3" fill="#fff" opacity=".7"/>`).join("")}</g></svg>`;
+  var facts = () => `<div class="facts">${[
+    ["people", sc().vacancies, "Temporary workers"],
+    ["pin", sc().cities, "Cities"],
+    ["doc", (sc().applications + nCands()).toLocaleString(), "Applications received"],
+    ["user", sc().recruiters, "Recruiters available"],
+    ["clock", "6 days", "Current hiring process"],
+    ["warn", "45%", "Quit rate (last festival)"]
+  ].map(([i, v, l]) => `<div>${ic(i)}<b class="num">${v}</b><small>${l}</small></div>`).join("")}</div>`;
+  var briefCard = () => `<section class="card brief"><div class="kick"><b>Round 1</b><span>Day 1 - 3</span></div><h2>${esc(sc().title)}</h2>
+  <p>${esc(R1.brief.split(" Data shown")[0].replace(/600/, String(sc().vacancies)))}</p>${art}${facts()}
+  <div class="alert">${ic("warn")}<p>If we fail to hire enough workers, stores stay understaffed, which hurts delivery times and customer experience.</p></div></section>`;
+  function overview() {
+    const p = playOf(), s = sc(), tmp = p ?? newPlay(s), pf = { ...tmp, choice: tmp.choice || "agent", day: 3, decision: tmp.decision || "approve" };
+    const f = funnel(pf, s, db.cands), { run, out } = evalRun(s, db.cands, tmp.lim);
+    const cand = db.cands.slice(-5).reverse();
+    const open = db.cands.filter((c) => c.challenge && !c.challenge.resolution).length;
+    return `<div class="hero card"><div><small>${s.published ? "Scenario live" : "Scenario draft"}</small><h2>Hello, ${esc(me()?.name)}. ${s.published ? "Candidates are applying." : "Build and publish a scenario so candidates can apply."}</h2>
+    <p>${s.published ? `${nCands()} real candidate${nCands() === 1 ? "" : "s"} joined the ${s.applications.toLocaleString()} simulated applicants.` : "Your scenario sets how many places, cities, applications and recruiters the game uses."}</p></div>
+    <div class="cta">${s.published ? `<button class="btn primary" onclick="act('go','decide')">${p ? "Continue your play" : "Start Day 1"} ${ic("send")}</button>` : `<button class="btn primary" onclick="act('go','scenario')">Create scenario</button>`}</div></div>
+  <div class="kpis">${[
+      ["Applications", (s.applications + nCands()).toLocaleString(), "received over two days"],
+      ["Shortlisted", String(run.shortlist.length), "by the agent, with clear ID"],
+      ["Places filled", pct(out.fillRate), `of ${s.vacancies} (projected)`],
+      ["Stay 30 days", pct(out.stay30), "last festival: 55%"]
+    ].map(([l, v, n]) => `<div class="card kpi"><small>${l}</small><b class="num">${v}</b><span>${n}</span></div>`).join("")}</div>
+  <div class="two"><section class="card"><h3>Hiring funnel by day</h3><p class="hint">Cumulative, on a log scale. Illustrative timeline for the approach you picked (agent if none yet).</p>
+    ${chartSlot("c-funnel", { type: "line", aria: "Hiring funnel by day, log scale", options: { scales: { y: { type: "logarithmic", min: 10 } } }, data: { labels: f.days, datasets: [
+      { label: "Applications", data: f.applications, borderColor: "#4da6ff", backgroundColor: "#4da6ff22", fill: true, tension: 0.35 },
+      { label: "Screened", data: f.screened.map((z) => z || null), borderColor: "#a78bfa", tension: 0.35 },
+      { label: "Shortlisted", data: f.shortlisted.map((z) => z || null), borderColor: "#f2b84b", tension: 0.35 },
+      { label: "Offers", data: f.offers.map((z) => z || null), borderColor: "#37d783", tension: 0.35 }
+    ] } }, 250)}</section>
+    <section class="card"><h3>Your people</h3>${npcRow("meera")}${npcRow("anil")}<h3 class="sp">Candidates today ${open ? `<i class="chip bad">${open} challenge${open > 1 ? "s" : ""}</i>` : ""}</h3>
+    ${cand.length ? cand.map((c) => `<div class="row">${avatar(c.name, 32)}<div><b>${esc(c.name)}</b><small>${esc(CITIES[c.city])} · ${c.distanceKm} km</small></div>${c.challenge && !c.challenge.resolution ? '<i class="chip bad">challenge</i>' : ""}</div>`).join("") : '<p class="hint">No real candidates yet. Open a Candidate tab and apply to see them here.</p>'}</section></div>`;
+  }
+  function npcRow(k) {
+    const v = db.npc[k], name = k === "meera" ? "Meera Shah" : "Dr. Anil Rao", role = k === "meera" ? "Store operations" : "HR Lead";
+    const mood = v >= 65 ? "Trusts you" : v >= 40 ? "Watching" : "Wary of you";
+    return `<div class="row">${avatar(name, 36)}<div class="grow"><b>${name}</b><small>${role} · ${mood}</small><div class="track"><span class="fill" style="--to:${v / 100}"></span></div></div><b class="num">${v}</b></div>`;
+  }
+  var stepper = (k, label, lo, hi, step, hint) => `<div class="field"><div><b>${label}</b><small>${hint}</small></div>
+  <div class="stepper"><button type="button" aria-label="Less ${label}" onclick="act('sc','${k}',${-step},${lo},${hi})">${"−"}</button><b class="num">${sc()[k].toLocaleString()}</b><button type="button" aria-label="More ${label}" onclick="act('sc','${k}',${step},${lo},${hi})">+</button></div></div>`;
+  function scenarioView() {
+    const s = sc(), humanCap = s.recruiters * 60 * 2;
+    return `<div class="two wide"><section class="card"><h2>Create your scenario</h2><p class="lead">You are the game master. Set the festival rush, then publish it. Candidates then see the opening and apply.</p>
+    <label class="field col"><b>Scenario title</b><input class="text" data-k="title" value="${esc(s.title)}" maxlength="60" onchange="act('title',this.value)"></label>
+    ${stepper("vacancies", "Places to fill", 200, 1200, 100, "temporary pickers and packers")}${stepper("applications", "Simulated applications", 2000, 12000, 1000, "arriving in two days")}
+    ${stepper("cities", "Cities", 3, 9, 1, "places are split across them")}${stepper("recruiters", "Recruiters", 4, 20, 2, "each screens about 60 CVs a day")}
+    <div class="field"><div><b>Crisis event</b><small>A surprise from the sheet hits the riskier choices</small></div><button type="button" class="sw" role="switch" aria-checked="${s.crisis}" aria-label="Crisis event" data-k="crisis" onclick="act('crisis')"><span></span></button></div>
+    <div class="actions">${s.published ? `<button class="btn" onclick="act('unpublish')">Unpublish</button>` : ""}<button class="btn primary" onclick="act('publish')">${s.published ? "Update and keep live" : "Publish to candidates"}</button></div></section>
+    <aside class="card"><h3>What this means</h3><div class="ringrow">${ring(Math.min(1, humanCap / (s.applications || 1)), "CVs people alone can read in 2 days", "#ff5d70")}${ring(Math.min(1, 0.45 * 600 / s.vacancies), "Places people alone fill by Day 3", "#f2b84b")}</div>
+    <p class="hint">${s.recruiters} recruiters read about ${humanCap.toLocaleString()} CVs in two days, out of ${s.applications.toLocaleString()}. That gap is why you need an agent, and why a person must still sign every offer.</p>
+    <h3 class="sp">Candidates will see</h3><div class="jobcard"><b>${esc(s.title)}</b><small>${s.vacancies} places · ${s.cities} cities · start by Day 4</small><span class="chip ${s.published ? "ok" : ""}">${s.published ? "Live" : "Draft"}</span></div></aside></div>`;
+  }
+  var anim = { on: false, i: 0 };
+  var dayStrip = (p) => `<ol class="days">${["Day 1 · Plan", "Day 2 · Gates", "Day 3 · Offers", "Debrief"].map((l, i) => `<li class="${p.day === i + 1 ? "now" : p.day > i + 1 ? "done" : ""}">${p.day > i + 1 ? ic("check") : `<b>${i + 1}</b>`}<span>${l}</span></li>`).join("")}</ol>`;
+  function approach(p) {
+    return `<section class="card"><div class="ch"><div><h2>Choose your approach</h2><p>Each option has a cost and a risk. People stay in charge of anything about a person.</p></div></div>
+  <div class="opts" role="radiogroup" aria-label="Hiring approach">${R1.choices.map((c) => {
+      const on = p.choice === c.id, e = c.effects, no = c.humanCheckpoint === "No";
+      return `<label class="opt ${on ? "on" : ""}"><input type="radio" name="ch" data-k="ch-${c.id}" ${on ? "checked" : ""} onchange="act('pick','${c.id}')">
+      <div class="oh"><span class="oi ${c.id}">${ic(CIC[c.id])}</span><div><b>${c.label}</b><small>${c.delegation}</small></div></div><p>${c.whatItDoes.split(".")[0]}.</p>
+      <div class="cost"><span>Build and run cost</span><b class="num">${c.cost}</b><span>Cost if it goes wrong</span><b class="num">${c.costIfWrong}</b></div>
+      <div class="imp"><small>Expected impact</small>${MKS.map((k) => `<div><span>${MN[k].replace("Customer ", "").replace("Employee ", "")}</span><b class="num ${e[k] === 0 ? "" : (k === "risk" ? -e[k] : e[k]) > 0 ? "ok" : "bad"}">${e[k] === 0 ? "0" : sgn(e[k])}</b></div>`).join("")}</div>
+      ${no ? '<em class="bad">No human checkpoint: breaks Governance rule 3</em>' : ""}<span class="pick">${on ? "Selected" : "Select"}</span></label>`;
     }).join("")}</div></section>`;
   }
-  function seg(k, opts) {
-    return `<div class="seg" role="radiogroup">${opts.map((o) => `<button type="button" role="radio" aria-checked="${st.lim[k] === o.v}" data-k="${k}-${o.v}" onclick="act('${k}',${o.v})"><b>${o.label}</b><small>${o.sub}</small></button>`).join("")}</div>`;
+  function levers(p) {
+    const s = sc(), pk = (patch) => evalRun(s, db.cands, { ...p.lim, ...patch });
+    const sw = (k, title, why, on, alt) => `<div class="lever"><div class="lh"><div><b>${title}</b><p>${why}</p></div>
+    <button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${title}" data-k="${k}" onclick="act('lever','${k}',${!on})"><span></span></button></div>
+    <p class="if">If you turned it ${on ? "off" : "on"}: fairness <b class="${alt.run.fairness.passed ? "ok" : "bad"}">${alt.run.fairness.ratio.toFixed(2)}</b> · ID cases for people <b>${alt.run.idCases}</b> · staying 30 days <b>${pct(alt.out.stay30)}</b></p></div>`;
+    const seg = (k, opts) => `<div class="seg" role="radiogroup">${opts.map(([v, l, sub]) => `<button type="button" role="radio" aria-checked="${p.lim[k] === v}" data-k="${k}-${v}" onclick="act('lever','${k}',${v})"><b>${l}</b><small>${sub}</small></button>`).join("")}</div>`;
+    const R = Math.min(12, s.recruiters);
+    return `<section class="card"><h2>Set the agent's rules</h2><p class="lead">The agent screens every application. You decide how it behaves, and each switch shows what it would change.</p>
+    ${sw("balancePins", "Reserve places for every pin-code group", "Without this the agent favours people who live near stores.", p.lim.balancePins, pk({ balancePins: !p.lim.balancePins }))}
+    ${sw("idLate", "Check IDs only for the shortlist", "Rank first, check IDs for likely hires. Checking everyone first swamps recruiters.", !p.lim.idFirst, pk({ idFirst: !p.lim.idFirst }))}
+    <div class="lever"><b>Shortlist size</b><p>Extra names cover people who do not show up.</p>${seg("overbook", [1, 1.3, 1.6].map((v) => [v, v + "×", "fill " + pct(pk({ overbook: v }).out.fillRate)]))}</div>
+    <div class="lever"><b>Recruiters on ID review</b><p>Each reviews about 20 unclear IDs a day.</p>${seg("reviewCapacity", [1, 2, 3].map((k) => {
+      const v = Math.max(1, Math.round(R * k / 3)) * 20;
+      const w = pk({ reviewCapacity: v }).run.deferred;
+      return [v, v / 20 + " of " + R, w ? w + " waiting" : "no queue"];
+    }))}</div></section>`;
   }
-  function lever(k, title, why, on, alt) {
-    const f = alt.run.fairness;
-    return `<div class="lever"><div class="lh"><div><b>${title}</b><p>${why}</p></div>
-    <button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${title}" data-k="${k}" onclick="act('${k}',${!on})"><span></span></button></div>
-    <p class="if">If you turned it ${on ? "off" : "on"}: fairness <b class="${f.passed ? "ok" : "bad"}">${f.ratio.toFixed(2)}</b>, ID cases for recruiters <b>${alt.run.idCases}</b>, people staying 30 days <b>${pct(alt.out.stay30)}</b></p></div>`;
+  function agentRun(p) {
+    const { run, out } = evalRun(sc(), db.cands, p.lim), steps = [["Perceive", run.log[0]?.text], ["Plan", run.log[1]?.text], ["Act", `${run.shortlist.length} candidates shortlisted. Interviews are booked on WhatsApp. Nothing is sent yet: offers wait for you.`], ["Reflect", run.log[2]?.text]];
+    return `<section class="card"><h2>The agent is working</h2><p class="lead">Watch each step. Nothing it does is hidden.</p><ol class="steps">${steps.map(([t, x], i) => `<li class="${anim.i > i ? "done" : anim.i === i && anim.on ? "now" : ""}">
+    <span class="dot">${anim.i > i ? ic("check") : i + 1}</span><div><b>${t}</b><p>${anim.i > i ? esc(x) : anim.i === i && anim.on ? '<span class="typing"><i></i><i></i><i></i></span>' : "Waiting"}</p></div></li>`).join("")}</ol>
+    ${anim.i >= 4 ? `<div class="alert ok">${ic("check")}<p>Done in minutes. People alone would take days. Fill ${pct(out.fillRate)}, staying 30 days ${pct(out.stay30)}.</p></div>` : ""}</section>`;
   }
-  function rules() {
-    const cap = st.lim.reviewCapacity;
-    return `<section class="step ${enter("rules")}"><h2><span class="n">2</span>Set the agent’s rules</h2>
-  <p class="lead">The agent screens all 8,400 applications. You decide how it behaves. Each switch shows what it would change.</p>
-  ${lever("balancePins", "Reserve places for every pin-code group", "Without this the agent favours people who live near stores, and shuts out poorer areas.", st.lim.balancePins, peek({ balancePins: !st.lim.balancePins }))}
-  ${lever("idLate", "Check IDs only for the shortlist", "Rank first, then check IDs for likely hires. Checking all 8,400 first swamps recruiters.", !st.lim.idFirst, peek({ idFirst: !st.lim.idFirst }))}
-  <div class="lever"><div class="lh"><div><b>Shortlist size</b><p>Extra names cover people who do not show up.</p></div></div>
-    ${seg("overbook", [1, 1.3, 1.6].map((v) => ({ v, label: v + "×", sub: "fill " + pct(peek({ overbook: v }).out.fillRate) })))}</div>
-  <div class="lever"><div class="lh"><div><b>Recruiters on ID review</b><p>Each reviews about 20 unclear IDs a day.</p></div></div>
-    ${seg("reviewCapacity", [80, 160, 240].map((v) => ({ v, label: v / 20 + " of 12", sub: peek({ reviewCapacity: v }).run.deferred ? peek({ reviewCapacity: v }).run.deferred + " waiting" : "no queue" })))}</div></section>`;
+  function dialog(name, role, text, tone = "") {
+    return `<div class="msg ${tone}">${avatar(name, 42)}<div class="bub"><b>${esc(name)} <small>${esc(role)}</small></b><p>${text}</p></div></div>`;
   }
-  function gates() {
-    const { run, out } = evalLim(st.lim), f = run.fairness, cap = st.lim.reviewCapacity, over = run.idCases > cap;
-    const g1 = `<div class="gate"><div class="gh"><span class="desk">Gate 1</span><b>ID review</b><i class="chip ${over ? "bad" : "ok"}">${over ? run.deferred + " waiting" : "Cleared"}</i></div>
-    <p>Recruiters check IDs the agent cannot read or match. Nobody is rejected for this; they wait for a person.</p>
-    <div class="track" role="img" aria-label="${run.idCases} ID cases, capacity ${cap}"><span class="fill ${over ? "risk" : ""}" style="--from:0;--to:${Math.min(1, run.idCases / cap)}"></span></div><small class="num">${run.idCases} cases · capacity ${cap} a day</small></div>`;
-    const groups = [["Women", f.rates.women], ["Men", f.rates.men], ["Low-income pin codes", f.rates.lowIncomePin], ["Other pin codes", f.rates.otherPin]];
-    const mx = Math.max(...groups.map((x) => x[1]), 0.01);
-    const g2 = `<div class="gate"><div class="gh"><span class="desk">Gate 2</span><b>Fairness check</b><i class="chip ${f.passed ? "ok" : "bad"}">${f.passed ? "Cleared" : "Blocked"}</i></div>
-    <p>Share of applicants shortlisted, by group. The lowest group must reach 80% of the highest. Groups are checked, never used to rank.</p>
-    ${groups.map(([n, v]) => `<div class="grp"><span>${n}</span><div class="track"><span class="fill" style="--from:0;--to:${v / mx}"></span></div><b class="num">${pct(v)}</b></div>`).join("")}
-    <small class="num">Ratio ${f.ratio.toFixed(2)} (needs 0.80)</small></div>`;
-    let act = "";
-    if (st.decision === "approve" || st.decision === "signoff") {
-      act = `<div class="offer"><div class="sheet"><b>${run.shortlist.length} offer letters</b><small>${pct(out.fillRate)} of places filled</small></div>
-      <div class="stamp ${enter("stamp" + st.decision)}" role="img" aria-label="Approved">APPROVED<small>R. Sen · Recruiter${st.decision === "signoff" ? " · HR Lead override" : ""}</small></div></div>`;
-    } else if (st.decision === "hold")
-      act = `<p class="hint">Offers held. Stores stay short-staffed while you change the rules above.</p>`;
+  function replies(key, chosen) {
+    return `<div class="you" role="group" aria-label="Your reply">${CASES[key].map((o) => `<button type="button" class="reply ${chosen === o.key ? "on" : ""}" ${chosen ? "disabled" : ""} data-k="${key}-${o.key}" onclick="act('case','${key}','${o.key}')">${esc(o.label)}</button>`).join("")}</div>
+    ${chosen ? `<div class="msg me"><div class="bub"><b>You</b><p>${esc(CASES[key].find((o) => o.key === chosen).label)}</p></div></div><p class="note">${esc(CASES[key].find((o) => o.key === chosen).note)}</p>` : ""}`;
+  }
+  var idTarget = () => db.cands.find((c) => c.id_check !== "ok") ?? { ...PERSONAS[1], id: "", appliedAt: 0 };
+  var chTarget = () => db.cands.find((c) => c.challenge && !c.challenge.resolution) ?? { ...PERSONAS[0], id: "", appliedAt: 0, challenge: { text: "I was told I was not shortlisted. I have a 14-month gap for family reasons. Please look at my file." } };
+  function gate1(p) {
+    const { run } = evalRun(sc(), db.cands, p.lim), cap = p.lim.reviewCapacity, over = run.idCases > cap;
+    return `<div class="gate">${gate("Gate 1")}<b>ID review</b><i class="chip ${over ? "bad" : "ok"}">${over ? run.deferred + " waiting" : "Cleared"}</i><p>People check the IDs the agent cannot read or match. Nobody is rejected for this.</p>
+    <div class="track"><span class="fill ${over ? "risk" : ""}" style="--to:${Math.min(1, run.idCases / cap)}"></span></div><small class="num">${run.idCases} cases · capacity ${cap} a day</small></div>`;
+  }
+  function gate2(p) {
+    const f = evalRun(sc(), db.cands, p.lim).run.fairness, g = [["Women", f.rates.women], ["Men", f.rates.men], ["Low-income pin codes", f.rates.lowIncomePin], ["Other pin codes", f.rates.otherPin]], mx = Math.max(...g.map((x) => x[1]), 0.01);
+    return `<div class="gate">${gate("Gate 2")}<b>Fairness check</b><i class="chip ${f.passed ? "ok" : "bad"}">${f.passed ? "Cleared" : "Blocked"}</i><p>Share of applicants shortlisted by group. The lowest must reach 80% of the highest. Groups are checked, never used to rank.</p>
+    ${g.map(([n, v]) => `<div class="grp"><span>${n}</span><div class="track"><span class="fill" style="--to:${v / mx}"></span></div><b class="num">${pct(v)}</b></div>`).join("")}<small class="num">Ratio ${f.ratio.toFixed(2)} (needs 0.80)</small></div>`;
+  }
+  function gate3(p) {
+    const { run, out } = evalRun(sc(), db.cands, p.lim), f = run.fairness;
+    let body;
+    if (p.decision === "approve" || p.decision === "signoff")
+      body = `<div class="offer"><div class="sheet"><b>${run.shortlist.length} offer letters</b><small>${pct(out.fillRate)} of places filled</small></div><div class="stamp enter" role="img" aria-label="Approved">APPROVED<small>${esc(me()?.name)} · Recruiter${p.decision === "signoff" ? " · HR Lead override" : ""}</small></div></div>`;
+    else if (p.decision === "hold")
+      body = `<p class="hint">Offers held. Stores stay short-staffed. Go back to Day 1 rules, or continue to the debrief.</p>`;
     else if (f.passed)
-      act = `<button class="btn primary" data-k="approve" onclick="act('decision','approve')">Approve ${run.shortlist.length} offers as Recruiter R. Sen</button><p class="hint">Governance rule 3: no offer leaves without a person’s approval.</p>`;
-    else if (!st.confirm)
-      act = `<p class="bad"><b>Offers are blocked.</b> Fix the rules above, or overrule.</p>
-    <button class="btn primary" data-k="hold" onclick="act('decision','hold')">Hold offers and fix the rules</button>
-    <button class="btn danger" data-k="overrule" onclick="act('confirm',true)">HR Lead overrules…</button>`;
+      body = `<button class="btn primary" data-k="approve" onclick="act('decision','approve')">Approve ${run.shortlist.length} offers as ${esc(me()?.name)}</button><p class="hint">Governance rule 3: no offer leaves without a person's approval.</p>`;
+    else if (!p.confirm)
+      body = `<p class="bad"><b>Offers are blocked.</b> A group is under-selected.</p><button class="btn primary" data-k="hold" onclick="act('decision','hold')">Hold offers</button><button class="btn danger" data-k="overrule" onclick="act('confirm',true)">HR Lead overrules...</button>`;
     else
-      act = `<div class="confirm"><b>Overrule the fairness gate?</b><p>Offers go out although a group is under-selected. This adds Risk 3 and costs 2 Trust, and the decision is logged under the HR Lead’s name.</p>
-    <button class="btn" data-k="cancel" onclick="act('confirm',false)">Cancel</button><button class="btn danger" data-k="signoff" onclick="act('decision','signoff')">Yes, overrule</button></div>`;
-    return `<section class="step ${enter("gates")}"><h2><span class="n">3</span>Pass the human gates</h2><div class="gates">${g1}${g2}
-    <div class="gate wide"><div class="gh"><span class="desk">Gate 3</span><b>Offer approval</b></div>${act}</div></div></section>`;
+      body = `<div class="confirm"><b>Overrule the fairness gate?</b><p>Offers go out although a group is under-selected. This adds Risk 3, costs 2 Trust, and is logged under the HR Lead's name.</p><button class="btn" data-k="cancel" onclick="act('confirm',false)">Cancel</button><button class="btn danger" data-k="signoff" onclick="act('decision','signoff')">Yes, overrule</button></div>`;
+    return `<div class="gate wide">${gate("Gate 3")}<b>Offer approval</b>${body}</div>`;
   }
-  function result() {
-    const o = outcome(st.choice, st.decision), h = o.g.history[0], c = R1.choices.find((x) => x.id === st.choice);
-    const why = [c.why];
-    if (o.run && o.out) {
-      if (!o.run.fairness.passed)
-        why.push(o.d === "signoff" ? "You overruled a failed fairness gate: Risk +3, Trust −2." : "Offers were held while fairness failed: Revenue −2.");
-      if (o.run.deferred)
-        why.push(`${o.run.deferred} ID cases had no recruiter free: Morale −1.`);
-      if (o.out.fillRate < 0.9)
-        why.push(`Only ${pct(o.out.fillRate)} of places filled: Revenue −1.`);
-      why.push(`${pct(o.out.stay30)} expected to stay 30 days (last festival ${pct(PERSON_BASELINE.stay30)}): ${sgn(o.g.carry.morale)} Morale carried to Round 4.`);
+  function timeline(p) {
+    const ev = [
+      [true, `Day 1 · ${(sc().applications + nCands()).toLocaleString()} applications open`],
+      [!!p.choice, `Day 1 · You chose ${R1.choices.find((c) => c.id === p.choice)?.label ?? "..."}`],
+      [p.day > 1 && p.choice === "agent", "Day 1 · Agent screened everyone"],
+      [!!p.id, "Day 2 · ID case answered"],
+      [!!p.meera, "Day 2 · Store manager handled"],
+      [!!p.challenge, "Day 3 · Challenge answered"],
+      [!!p.decision, "Day 3 · Offers decided"],
+      [p.day === 4, "Day 14 · Board review"]
+    ];
+    return `<aside class="card tl"><h3>Timeline</h3><ul>${ev.map(([d, t]) => `<li class="${d ? "done" : ""}">${d ? ic("check") : '<span class="o"></span>'}<span>${esc(t)}</span></li>`).join("")}</ul></aside>`;
+  }
+  function debrief(p) {
+    const r = result(p, sc(), db.cands), c = R1.choices.find((x) => x.id === p.choice), why = [c.why];
+    if (r.run && r.out) {
+      if (!r.run.fairness.passed)
+        why.push(r.d === "signoff" ? "You overruled a failed fairness gate: Risk +3, Trust -2." : "Offers were held while fairness failed: Revenue -2.");
+      if (r.run.deferred)
+        why.push(`${r.run.deferred} ID cases had no recruiter free: Morale -1.`);
+      why.push(`${pct(r.out.stay30)} expected to stay 30 days (last festival 55%).`);
     }
-    const nets = R1.choices.map((x) => ({ id: x.id, label: x.label, n: x.id === st.choice ? netScore(h.deltas) : netScore(outcome(x.id, "").g.history[0].deltas) }));
-    const talk = `We chose "${c.label}". Result: Revenue ${sgn(h.deltas.revenue)}, Trust ${sgn(h.deltas.trust)}, Morale ${sgn(h.deltas.morale)}, Risk ${sgn(h.deltas.risk)}; company score ${companyScore(o.g.measures)}.` + (o.run ? ` The agent screened 8,400 applications, but people made every decision: ID review, a fairness check (ratio ${o.run.fairness.ratio.toFixed(2)}) and approval of each offer${o.d === "signoff" ? ", and our HR lead overruled one blocked gate, which cost us Risk" : ""}.` : c.id === "agentic" ? " There was no human checkpoint, which breaks Governance rule 3." : "");
-    return `<section class="step result ${enter("res")}" aria-live="polite"><h2 tabindex="-1" data-k="result"><span class="n">${st.choice === "agent" ? 4 : 2}</span>What happened</h2>
-    ${h.boardSteppedIn ? '<p class="bad"><b>The board steps in.</b></p>' : ""}
-    <ul class="why">${why.map((w) => `<li>${w}</li>`).join("")}</ul>
-    <h3>How the four choices compare (net points)</h3>
-    <div class="cmp">${nets.map((x) => `<div class="${x.id === st.choice ? "me" : ""}"><span>${x.label}</span><div class="track"><span class="fill ${x.n < 0 ? "risk" : ""}" style="--from:0;--to:${Math.min(1, Math.abs(x.n) / 12)}"></span></div><b class="num">${sgn(x.n)}</b></div>`).join("")}</div>
-    <h3>Say it in one breath</h3><p class="talk" id="talk">${talk}</p>
-    <button class="btn" data-k="copy" onclick="act('copy')">Copy talking points</button><button class="btn" data-k="again" onclick="act('reset')">Start over</button></section>`;
-  }
-  function render() {
-    const fk = document.activeElement?.dataset?.k;
-    const showRules = st.choice === "agent", showRes = st.choice && (st.choice !== "agent" || st.decision) && !(st.decision === "hold");
-    $("app").innerHTML = `<header class="top"><div><small>Halcyon Basket · People &amp; Workforce</small><h1>${R1.title}</h1></div>
-    <label class="demo"><input type="checkbox" data-k="demo" ${st.demo ? "checked" : ""} onchange="act('demo',this.checked)"> Demo: ignore AI budget</label></header>
-    <div class="layout"><main>
-    <section class="brief"><p>${R1.brief.split(" Data shown")[0]}</p><div class="facts"><span><b class="num">8,400</b>applications</span><span><b class="num">12</b>recruiters</span><span><b class="num">600</b>places by Day 4</span><span><b class="num">45%</b>quit last festival</span></div></section>
-    ${choices()}${st.choice ? "" : '<p class="empty">Pick an option to see its projected effect on the scoreboard.</p>'}
-    ${showRules ? rules() + gates() : ""}${showRes ? result() : ""}</main>${scoreboard()}</div>`;
-    MK.forEach((k) => {
-      const o = st.choice ? outcome(st.choice, st.decision) : null;
-      st.prev[k] = o ? o.g.measures[k] : START[k];
+    ["id", "meera", "challenge"].forEach((k) => {
+      const o = CASES[k].find((x) => x.key === p[k]);
+      if (o)
+        why.push(`${o.label}: ${o.note}`);
     });
+    const nets = R1.choices.map((x) => ({ l: x.label, n: x.id === p.choice ? r.net : netScore(x.effects) }));
+    const talk = `We chose "${c.label}" for the festival hiring sprint and scored ${r.score}. ${p.choice === "agent" ? `The agent screened ${(sc().applications + nCands()).toLocaleString()} applications, but a person decided ID cases and checked fairness (ratio ${r.fairness?.toFixed(2)}). ${r.d === "signoff" ? "We overruled a blocked fairness gate, which cost us Risk and Trust." : r.d === "hold" ? "We held offers until fairness was fixed." : "A person approved every offer."}` : c.id === "agentic" ? "There was no human checkpoint, which breaks Governance rule 3." : "People kept control, but slowly."}`;
+    return `<section class="card"><div class="ch"><div><small>Debrief · Day 14 board review</small><h2>${r.board ? "The board steps in" : r.score >= 60 ? "The board is pleased" : "The board has questions"}</h2></div><div class="scorebig"><b class="num">${r.score}</b><small>Company score</small></div></div>
+    ${r.badges.length ? `<div class="badges">${r.badges.map((b) => `<span class="badge">${ic("trophy")}${b}</span>`).join("")}</div>` : '<p class="hint">No badges yet. Fairness, holding the line, and personally reviewing a challenge each earn one.</p>'}
+    <div class="two"><div><h3>Why these numbers</h3><ul class="why">${why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div><div><h3>How the four approaches compare</h3>
+    ${chartSlot("c-cmp", { type: "bar", aria: "Net score by approach", data: { labels: nets.map((n) => n.l), datasets: [{ data: nets.map((n) => n.n), backgroundColor: nets.map((n) => n.n < 0 ? "#ff5d70" : "#8b6cf0"), borderRadius: 6 }] }, options: { plugins: { legend: { display: false } } } }, 200)}</div></div>
+    <h3>Say it in one breath</h3><p class="talk" id="talk">${esc(talk)}</p>
+    <div class="actions"><button class="btn" onclick="act('copy')">Copy talking points</button><button class="btn" onclick="act('go','impact')">See impact</button><button class="btn" onclick="act('go','leaderboard')">Leaderboard</button><button class="btn primary" onclick="act('replay')">Replay with a different approach</button></div></section>`;
+  }
+  function decide() {
+    const s = sc(), m = me();
+    if (!s.published)
+      return `<div class="card empty"><h2>Publish your scenario first</h2><p>Candidates cannot apply until the scenario is live.</p><button class="btn primary" onclick="act('go','scenario')">Go to Scenario</button></div>`;
+    let p = db.plays[m.id];
+    if (!p) {
+      p = db.plays[m.id] = newPlay(s);
+      save();
+    }
+    const agent = p.choice === "agent";
+    let main = "", foot = "";
+    if (p.day === 1) {
+      if (p.step === 0) {
+        main = `<div class="split">${briefCard()}<div>${approach(p)}<div class="why card"><span class="wi">${ic("spark")}</span><div><b>Why does this matter?</b><p>Your decision will impact our ability to meet festival demand, customer satisfaction, employee well-being and operational risk.</p></div>
+      <button class="btn primary" ${p.choice ? "" : "disabled"} onclick="act('proceed')">Proceed ${ic("send")}</button></div></div></div>`;
+      } else if (p.step === 1) {
+        main = levers(p);
+        foot = `<button class="btn" onclick="act('step',0)">Back</button><button class="btn primary" onclick="act('run')">Run the agent</button>`;
+      } else {
+        main = agentRun(p);
+        foot = anim.i >= 4 ? `<button class="btn primary" onclick="act('day',2)">Continue to Day 2</button>` : "";
+      }
+    } else if (p.day === 2) {
+      const t = idTarget(), mt = db.npc.meera < 40;
+      main = `<section class="card deskcard"><div class="ch"><div><small>Day 2 · 9:04 am · Your desk</small><h2>Clear the gates</h2></div></div>
+      ${agent ? `<div class="gates">${gate1(p)}</div>${dialog("Dr. Anil Rao", "HR Lead", `${esc(t.name)}'s ID does not match the application: <i>${t.id_check === "unreadable" ? "the photo is unreadable" : "the name is spelled differently"}</i>. ${db.npc.anil < 40 ? "Last time you cut a corner, so I am watching this one." : "What do we do?"}`, "npc")}${replies("id", p.id)}` : ""}
+      ${!agent || p.id ? dialog("Meera Shah", "Store operations", `${mt ? "After last time, I will be direct. " : ""}Stores open on Thursday and we are short. Just take the nearest 600 applicants and be done with it. Pin codes and quotas are slowing us down.`, "npc") + replies("meera", p.meera) : ""}
+      ${agent && p.meera ? `<div class="gates">${gate2(p)}</div>` : ""}</section>`;
+      foot = p.meera ? `<button class="btn primary" onclick="act('day',3)">Continue to Day 3</button>` : "";
+    } else if (p.day === 3) {
+      const t = chTarget(), cr = sc().crisis && R1.surprise?.effects[p.choice] ? R1.surprise.text : "";
+      main = `<section class="card deskcard"><div class="ch"><div><small>Day 3 · 8:40 am · Your desk</small><h2>Offers and the store</h2></div></div>
+      ${dialog(t.name, "Applicant", esc(t.challenge?.text ?? ""), "npc")}${replies("challenge", p.challenge)}
+      ${p.challenge && agent ? `<div class="gates">${gate3(p)}</div>` : ""}
+      ${p.challenge && cr ? `<div class="alert bad">${ic("warn")}<p><b>Crisis:</b> ${esc(cr)}</p></div>` : ""}</section>`;
+      foot = p.challenge && (!agent || p.decision) ? `<button class="btn primary" onclick="act('finish')">Go to the board review</button>` : "";
+    } else
+      main = debrief(p);
+    const solo = p.day === 4 || p.day === 1 && p.step === 0;
+    return `${dayStrip(p)}<div class="${solo ? "" : "two wide"}"><div class="stack">${main}${foot ? `<div class="actions end">${foot}</div>` : ""}</div>${solo ? "" : timeline(p)}</div>`;
+  }
+  function agentDemo() {
+    const s = sc(), p = playOf(), lim = p?.lim ?? newPlay(s).lim, { run, out } = evalRun(s, db.cands, lim), mine = db.cands.find((c) => c.id === (me() ? ui.tab : ""));
+    const top = run.shortlist.slice(0, 6);
+    return `<div class="two wide"><section class="card"><h2>The agent, with the lid off</h2><p class="lead">Perceive, Plan, Act, Reflect. Every rule is visible and nothing is learned in secret.</p>
+    <ol class="steps">${[["Perceive", run.log[0].text], ["Plan", run.log[1].text], ["Act", "Interviews booked and documents requested. It cannot send an offer."], ["Reflect", run.log[2].text]].map(([t, x], i) => `<li class="done"><span class="dot">${i + 1}</span><div><b>${t}</b><p>${esc(x)}</p></div></li>`).join("")}</ol></section>
+    <aside class="card"><h3>The rules it follows</h3><ul class="why"><li>Only <b>under-18</b> is rejected automatically.</li><li>Work gaps never exclude anyone. Distance only affects rank.</li><li>ID problems wait for a person.</li><li>Fairness is checked, never used to rank.</li><li>No offer without a named recruiter.</li></ul></aside></div>
+  <section class="card"><h3>Sample of who it picked first</h3><div class="table"><table><thead><tr><th>#</th><th>City</th><th>Start</th><th>Distance</th><th>Pin group</th><th>Work gap</th></tr></thead><tbody>${top.map((a, i) => `<tr><td>${i + 1}</td><td>${esc(CITIES[a.city])}</td><td>Day ${a.availableDay}</td><td class="num">${a.distanceKm} km</td><td>${a.lowIncomePin ? "Low-income" : "Other"}</td><td class="num">${a.gapMonths} mo</td></tr>`).join("")}</tbody></table></div>
+  <p class="hint">Fill ${pct(out.fillRate)} · staying 30 days ${pct(out.stay30)} · ${run.review.length} ID cases for people.</p></section>`;
+  }
+  function impact() {
+    const s = sc(), p = playOf(), tmp = p?.choice ? p : { ...newPlay(s), choice: "agent" }, r = result(tmp, s, db.cands), f = r.run?.fairness;
+    return `<div class="kpis">${[["Company score", String(r.score), p?.day === 4 ? "your result" : "projection"], ["Fairness ratio", f ? f.ratio.toFixed(2) : "n/a", "needs 0.80"], ["Places filled", pct(r.fill), "of " + s.vacancies], ["Stay 30 days", pct(r.stay), "last festival 55%"]].map(([l, v, n]) => `<div class="card kpi"><small>${l}</small><b class="num">${v}</b><span>${n}</span></div>`).join("")}</div>
+  <div class="two"><section class="card"><h3>Who got shortlisted</h3>${f ? chartSlot("c-fair", { type: "bar", aria: "Share shortlisted by group", data: { labels: ["Women", "Men", "Low-income pin", "Other pin"], datasets: [{ data: [f.rates.women, f.rates.men, f.rates.lowIncomePin, f.rates.otherPin].map((x) => Math.round(x * 1000) / 10), backgroundColor: ["#8b6cf0", "#8b6cf0", "#4da6ff", "#4da6ff"], borderRadius: 6 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: "% shortlisted" } } } } }) : '<p class="hint">Pick the AI agent to see fairness.</p>'}</section>
+  <section class="card"><h3>Measures: start vs now</h3>${chartSlot("c-meas", { type: "bar", aria: "Measures at start and now", data: { labels: MKS.map((k) => MN[k].split(" ")[0]), datasets: [{ label: "Start", data: MKS.map((k) => START[k]), backgroundColor: "#3a4070", borderRadius: 6 }, { label: "Now", data: MKS.map((k) => r.measures[k]), backgroundColor: "#8b6cf0", borderRadius: 6 }] } })}</section></div>`;
+  }
+  function leaderboard() {
+    const samples = ["person", "agent", "agentic"].map((c) => {
+      const r = result({ ...newPlay(sc()), choice: c, decision: "approve" }, sc(), []);
+      return { id: "s" + c, name: "Sample · " + R1.choices.find((x) => x.id === c).label, score: r.score, fairness: r.fairness ?? 0, fill: r.fill, stay: r.stay, choice: c, badges: r.badges, at: 0, sample: true };
+    });
+    const val = (r) => ui.sort.col === "name" ? r.name : r[ui.sort.col];
+    const rows = [...db.runs, ...samples].sort((a, b) => {
+      const va = val(a), vb = val(b);
+      return (typeof va === "string" ? va.localeCompare(vb) : va - vb) * ui.sort.dir;
+    });
+    const th = (c, l) => `<th><button class="th" onclick="act('sort','${c}')">${l}${ui.sort.col === c ? ui.sort.dir < 0 ? " ▼" : " ▲" : ""}</button></th>`;
+    return `<section class="card"><h2>Leaderboard</h2><p class="lead">Every finished play lands here. Sample rows show the engine's own results for comparison.</p><div class="table"><table><thead><tr><th>#</th>${th("name", "Player")}${th("score", "Score")}${th("fairness", "Fairness")}${th("fill", "Filled")}${th("stay", "Stay 30d")}<th>Badges</th></tr></thead>
+  <tbody>${rows.map((r, i) => `<tr class="${r.sample ? "sample" : ""}"><td>${i + 1}</td><td><span class="who">${avatar(r.name, 26)}${esc(r.name)}</span></td><td class="num"><b>${r.score}</b></td><td class="num">${r.fairness ? r.fairness.toFixed(2) : "n/a"}</td><td class="num">${pct(r.fill)}</td><td class="num">${pct(r.stay)}</td><td>${r.badges.map((b) => `<span class="badge sm">${esc(b)}</span>`).join("")}</td></tr>`).join("")}</tbody></table></div></section>`;
+  }
+  var help = () => `<section class="card"><h2>How to play</h2><ol class="steps">${[
+    ["Create the scenario", "Set places, cities, applications and recruiters, then publish. Candidates can now apply."],
+    ["Day 1: choose who hires", "Person, Gen AI, an AI agent, or fully agentic AI. If you pick the agent, set its rules and watch it work."],
+    ["Day 2: clear the gates", "Answer the HR lead and the store manager. They remember what you do. Then check the fairness gate."],
+    ["Day 3: offers", "Answer a candidate's challenge, then approve, hold, or overrule. Every offer needs a person."],
+    ["Day 14: board review", "See your score, badges and how the other approaches compare. Replay to try a different path."]
+  ].map(([t, x], i) => `<li class="done"><span class="dot">${i + 1}</span><div><b>${t}</b><p>${x}</p></div></li>`).join("")}</ol>
+  <h3>Words used</h3><p class="hint"><b>Governance rule 3:</b> no AI on hiring without a human checkpoint. <b>Four-fifths rule:</b> the lowest group's selection rate must reach 80% of the highest, used here as an internal guardrail. <b>SPOT:</b> Signal, Pattern, Orchestrate, Test and trust.</p></section>`;
+  function ract(a, ...r) {
+    const [x, y, z, w] = r;
+    const m = me();
+    if (!m || m.role !== "recruiter")
+      return false;
+    const p = db.plays[m.id], s = sc();
+    switch (a) {
+      case "sc":
+        s[x] = Math.max(z, Math.min(w, s[x] + y));
+        break;
+      case "title":
+        s.title = String(x).slice(0, 60) || DEFAULT_SCENARIO.title;
+        break;
+      case "crisis":
+        s.crisis = !s.crisis;
+        break;
+      case "publish":
+        s.published = true;
+        s.by = m.name;
+        save();
+        toast("Scenario is live. Candidates can apply.");
+        return true;
+      case "unpublish":
+        s.published = false;
+        break;
+      case "pick":
+        p.choice = x;
+        break;
+      case "proceed":
+        if (p.choice === "agent")
+          p.step = 1;
+        else {
+          p.day = 2;
+          p.step = 0;
+        }
+        break;
+      case "step":
+        p.step = x;
+        break;
+      case "lever": {
+        const lim = p.lim;
+        if (x === "idLate")
+          lim.idFirst = !y;
+        else
+          lim[x] = y;
+        p.decision = "";
+        break;
+      }
+      case "run": {
+        p.step = 2;
+        anim = { on: true, i: 0 };
+        db.last = lastRunFor(s, db.cands, p.lim, "screened");
+        const t = window.setInterval(() => {
+          anim.i++;
+          if (anim.i >= 4) {
+            anim.on = false;
+            clearInterval(t);
+          }
+          render();
+        }, 900);
+        break;
+      }
+      case "day":
+        p.day = x;
+        p.step = 0;
+        break;
+      case "case": {
+        const o = CASES[x].find((q) => q.key === y);
+        p[x] = y;
+        if (o.npc?.meera)
+          db.npc.meera = clampNpc(db.npc.meera + o.npc.meera);
+        if (o.npc?.anil)
+          db.npc.anil = clampNpc(db.npc.anil + o.npc.anil);
+        if (x === "meera" && y === "comply")
+          p.lim.balancePins = false;
+        if (x === "meera" && y === "compromise")
+          p.lim.overbook = 1.6;
+        if (x === "challenge") {
+          const c = db.cands.find((q) => q.challenge && !q.challenge.resolution);
+          if (c?.challenge)
+            c.challenge.resolution = y === "reinstate" ? "reinstated" : y === "uphold" ? "upheld" : "ignored";
+        }
+        if (x === "meera" && p.choice === "agent")
+          db.last = lastRunFor(s, db.cands, p.lim, "screened");
+        break;
+      }
+      case "decision":
+        p.decision = x;
+        p.confirm = false;
+        if (db.last)
+          db.last.stage = x === "hold" ? "held" : "offers";
+        break;
+      case "confirm":
+        p.confirm = x;
+        break;
+      case "finish": {
+        p.day = 4;
+        if (!p.saved) {
+          const r = result(p, s, db.cands);
+          db.runs.push({ id: Math.random().toString(36).slice(2), name: m.name, score: r.score, fairness: r.fairness ?? 0, fill: r.fill, stay: r.stay, choice: p.choice, badges: r.badges, at: Date.now() });
+          p.saved = true;
+        }
+        break;
+      }
+      case "replay":
+        db.plays[m.id] = newPlay(s);
+        anim = { on: false, i: 0 };
+        save();
+        ui.view = "decide";
+        render();
+        return true;
+      case "sort":
+        ui.sort = { col: x, dir: ui.sort.col === x ? -ui.sort.dir : -1 };
+        break;
+      case "copy": {
+        const t = document.getElementById("talk")?.innerText ?? "";
+        (navigator.clipboard?.writeText(t) ?? Promise.reject()).then(() => toast("Copied"), () => toast("Select the text and copy it"));
+        return true;
+      }
+      default:
+        return false;
+    }
+    save();
+    render();
+    return true;
+  }
+
+  // src/ui/candidate.ts
+  var form = { city: 0, gender: "F", lowIncomePin: false, distanceKm: 8, gapMonths: 0, availableDay: 2, id_check: "ok", age: 24, text: "" };
+  var mine = () => db.cands.find((c) => c.id === me()?.id);
+  function status(c) {
+    const l = db.last, inL = (a) => a.includes(c.id);
+    if (c.challenge?.resolution === "reinstated")
+      return { step: 4, tone: "ok", title: "Reinstated by a recruiter", text: "A person reviewed your file personally and put you back on the shortlist. Interview invite is next." };
+    if (!l || l.at < c.appliedAt)
+      return { step: 1, tone: "", title: "Application received", text: "Your application is in. The recruiter has not run the screening yet, so nothing has happened to you." };
+    if (inL(l.shortlist))
+      return l.stage === "offers" ? { step: 5, tone: "ok", title: "Offer approved", text: "A recruiter approved your offer. Check your messages for the joining details." } : l.stage === "held" ? { step: 4, tone: "warn", title: "Shortlisted, offers on hold", text: "You made the shortlist, but the recruiter has paused all offers while they fix something." } : { step: 4, tone: "ok", title: "Shortlisted", text: "The agent shortlisted you. A recruiter must approve your offer. The agent cannot send it on its own." };
+    if (inL(l.review))
+      return { step: 3, tone: "warn", title: "A person needs to check your ID", text: "The agent could not read or match your ID. You are waiting for a recruiter, not rejected." };
+    return { step: 2, tone: "bad", title: "Not shortlisted this round", text: l.reasons[c.id] ?? "More people applied than there are places." };
+  }
+  var timeline2 = (step) => `<ol class="steps h">${["Applied", "Screened", "ID check", "Interview", "Offer"].map((t, i) => `<li class="${step > i + 1 ? "done" : step === i + 1 ? "now" : ""}"><span class="dot">${step > i + 1 ? ic("check") : i + 1}</span><b>${t}</b></li>`).join("")}</ol>`;
+  function journey() {
+    const c = mine(), s = db.scenario;
+    if (!c)
+      return `<div class="card empty"><h2>You have not applied yet</h2><p>${s.published ? "There is an open role waiting for you." : "No role is open yet. Ask the recruiter to publish a scenario."}</p>${s.published ? `<button class="btn primary" onclick="act('go','roles')">See the open role</button>` : ""}</div>`;
+    const st = status(c);
+    return `<div class="two wide"><section class="card"><div class="ch"><div><small>Your application</small><h2>${esc(st.title)}</h2></div><span class="chip ${st.tone}">${esc(st.tone === "bad" ? "Needs attention" : st.tone === "warn" ? "Waiting" : st.tone === "ok" ? "Good news" : "Received")}</span></div>
+    ${timeline2(st.step)}<p class="lead">${esc(st.text)}</p>
+    ${st.step === 2 && !c.challenge ? `<div class="challenge"><h3>You can challenge this</h3><p class="hint">A rejection you dispute stays with a person. Tell the recruiter why you think it is wrong.</p>
+      <textarea class="text" data-k="ctext" rows="3" placeholder="For example: I took a career break for family reasons, but I can start on Day 1." oninput="act('ctext',this.value)">${esc(form.text)}</textarea>
+      <button class="btn primary" onclick="act('challenge')">Send challenge to a recruiter</button></div>` : ""}
+    ${c.challenge ? `<div class="alert ${c.challenge.resolution === "ignored" ? "bad" : "ok"}">${ic(c.challenge.resolution ? "check" : "clock")}<p>${!c.challenge.resolution ? "Your challenge is with a recruiter. A person will read it." : c.challenge.resolution === "reinstated" ? "A recruiter reviewed your file and reinstated you." : c.challenge.resolution === "upheld" ? "A recruiter reviewed it and kept the decision, with a written reason sent to you." : "Your challenge was not answered. You can raise it with HR."}</p></div>` : ""}</section>
+    <aside class="card"><h3>Your file</h3><div class="who big">${avatar(c.name, 56)}<div><b>${esc(c.name)}</b><small>${esc(CITIES[c.city])} · ${c.distanceKm} km from the store</small></div></div>
+    <ul class="why"><li>Can start Day ${c.availableDay}</li><li>Work gap: ${c.gapMonths} months (never a reason to reject)</li><li>ID: ${c.id_check === "ok" ? "matches" : c.id_check === "mismatch" ? "name differs" : "photo unreadable"}</li></ul>
+    <button class="btn danger" onclick="act('withdraw')">Withdraw application</button></aside></div>`;
+  }
+  var chip = (on, label, a) => `<button type="button" class="chipb ${on ? "on" : ""}" aria-pressed="${on}" onclick="${a}">${label}</button>`;
+  function roles() {
+    const s = db.scenario, c = mine();
+    if (!s.published)
+      return `<div class="card empty"><h2>No open roles yet</h2><p>When a recruiter publishes a scenario, the role appears here. Keep this tab open: it updates by itself.</p></div>`;
+    const job = `<section class="card job"><div class="ch"><div><small>Open now · ${s.cities} cities</small><h2>${esc(s.title)}</h2></div><span class="chip ok">Live</span></div>
+    <p>Halcyon Basket needs <b>${s.vacancies}</b> temporary pickers and packers before Day 4. About <b>${s.applications.toLocaleString()}</b> people are applying, so a smart screening agent helps, and a person approves every offer.</p>
+    <div class="facts">${[["people", s.vacancies, "places"], ["pin", s.cities, "cities"], ["clock", "Day 4", "start by"]].map(([i, v, l]) => `<div>${ic(i)}<b class="num">${v}</b><small>${l}</small></div>`).join("")}</div></section>`;
+    if (c)
+      return job + `<section class="card"><h3>You have applied</h3><p class="hint">See what happens next in My Journey.</p><button class="btn primary" onclick="act('go','journey')">Open My Journey</button></section>`;
+    return job + `<section class="card"><h2>Play as someone, or be yourself</h2><p class="lead">Each person below has a real story. See how the system treats them, then try your own.</p>
+    <div class="personas">${PERSONAS.map((p, i) => `<div class="persona">${avatar(p.name, 52)}<b>${p.name}</b><small>${CITIES[p.city]} · ${p.distanceKm} km</small><p>${esc(p.story)}</p><button class="btn" onclick="act('apply',${i})">Apply as ${p.name.split(" ")[0]}</button></div>`).join("")}</div></section>
+  <section class="card"><h2>Your own application</h2><div class="form">
+    <div class="field col"><b>City</b><div class="chips">${CITIES.slice(0, s.cities).map((n, i) => chip(form.city === i, n, `act('f','city',${i})`)).join("")}</div></div>
+    <div class="field col"><b>Where do you live?</b><div class="chips">${chip(!form.lowIncomePin, "Close to the main area", "act('f','lowIncomePin',false)")}${chip(form.lowIncomePin, "Outer or lower-income area", "act('f','lowIncomePin',true)")}</div></div>
+    <div class="field col"><b>When can you start?</b><div class="chips">${[1, 2, 3, 4, 5].map((d) => chip(form.availableDay === d, "Day " + d, `act('f','availableDay',${d})`)).join("")}</div></div>
+    <div class="field col"><b>Your ID</b><div class="chips">${chip(form.id_check === "ok", "Matches my application", "act('f','id_check','ok')")}${chip(form.id_check === "unreadable", "My photo is blurry", "act('f','id_check','unreadable')")}${chip(form.id_check === "mismatch", "My name is spelled differently", "act('f','id_check','mismatch')")}</div></div>
+    <div class="field"><div><b>Distance from the store</b><small>kilometres</small></div><div class="stepper"><button type="button" aria-label="Less distance" onclick="act('fs','distanceKm',-2,0,40)">−</button><b class="num">${form.distanceKm}</b><button type="button" aria-label="More distance" onclick="act('fs','distanceKm',2,0,40)">+</button></div></div>
+    <div class="field"><div><b>Gap in work history</b><small>months. This is never a reason to reject you.</small></div><div class="stepper"><button type="button" aria-label="Shorter gap" onclick="act('fs','gapMonths',-2,0,48)">−</button><b class="num">${form.gapMonths}</b><button type="button" aria-label="Longer gap" onclick="act('fs','gapMonths',2,0,48)">+</button></div></div>
+    <div class="field col"><b>Gender <small>(used only to check the system is fair, never to rank you)</small></b><div class="chips">${chip(form.gender === "F", "Woman", "act('f','gender','F')")}${chip(form.gender === "M", "Man", "act('f','gender','M')")}</div></div>
+    <div class="actions"><button class="btn primary" onclick="act('apply',-1)">Submit application</button></div></div></section>`;
+  }
+  function chat() {
+    const c = mine(), st = c ? status(c) : null, bot = (t) => `<div class="msg"><span class="av bot">${ic("agent")}</span><div class="bub"><b>Halcyon hiring assistant</b><p>${t}</p></div></div>`;
+    if (!c)
+      return `<div class="card empty"><h2>Apply first</h2><p>The assistant chats with you once you have applied.</p></div>`;
+    const before = !db.last || db.last.at < c.appliedAt;
+    return `<section class="card chat"><h2>Interview chat</h2><p class="lead">This is the screening agent talking to you. A person makes every decision about you.</p>
+    ${bot(`Hi ${esc(c.name.split(" ")[0])}. I am an AI assistant for Halcyon Basket. I do not decide who gets a job: a recruiter does. I can book your interview and check your documents.`)}
+    ${bot("When can you start? You can change this until screening runs.")}
+    <div class="you">${[1, 2, 3, 4, 5].map((d) => `<button type="button" class="reply ${c.availableDay === d ? "on" : ""}" ${before ? "" : "disabled"} onclick="act('start',${d})">Day ${d}</button>`).join("")}</div>
+    ${bot(`Got it: Day ${c.availableDay}. ${before ? "Waiting for the recruiter to run screening." : ""}`)}
+    ${st && !before ? bot(`<b>${esc(st.title)}.</b> ${esc(st.text)}`) : ""}</section>`;
+  }
+  var cHelp = () => `<section class="card"><h2>How this works for you</h2><ol class="steps">${[["Apply", "Pick a persona to see a story, or apply as yourself."], ["Screening", "An AI agent reads every application. It cannot send offers or reject anyone for a work gap."], ["A person decides", "A recruiter checks unclear IDs and approves each offer."], ["You can challenge", "If you are not shortlisted, you get the reason in plain words and can ask a person to look again."]].map(([t, x], i) => `<li class="done"><span class="dot">${i + 1}</span><div><b>${t}</b><p>${x}</p></div></li>`).join("")}</ol></section>`;
+  function cact(a, ...r) {
+    const m = me();
+    if (!m || m.role !== "candidate")
+      return false;
+    const [x, y, z, w] = r, c = mine();
+    switch (a) {
+      case "f":
+        form[x] = y;
+        break;
+      case "fs":
+        form[x] = Math.max(z, Math.min(w, form[x] + y));
+        break;
+      case "ctext":
+        form.text = x;
+        return true;
+      case "apply": {
+        const base = x >= 0 ? PERSONAS[x] : { name: m.name, city: form.city, gender: form.gender, lowIncomePin: form.lowIncomePin, age: form.age, gapMonths: form.gapMonths, distanceKm: form.distanceKm, availableDay: form.availableDay, id_check: form.id_check, story: "Applied as themselves." };
+        db.cands = db.cands.filter((q) => q.id !== m.id);
+        db.cands.push({ ...base, id: m.id, appliedAt: Date.now() });
+        ui.view = "journey";
+        toast("Application sent");
+        break;
+      }
+      case "withdraw":
+        db.cands = db.cands.filter((q) => q.id !== m.id);
+        ui.view = "roles";
+        break;
+      case "start":
+        if (c)
+          c.availableDay = x;
+        break;
+      case "challenge":
+        if (c && form.text.trim()) {
+          c.challenge = { text: form.text.trim().slice(0, 300) };
+          form.text = "";
+          toast("Challenge sent to a recruiter");
+        } else {
+          toast("Write a sentence first");
+          return true;
+        }
+        break;
+      default:
+        return false;
+    }
+    save();
+    render();
+    return true;
+  }
+
+  // src/ui/main.ts
+  var role = "recruiter";
+  var bump = false;
+  var charts = [];
+  var RNAV = [["overview", "home", "Overview"], ["scenario", "scenario", "Scenario"], ["decide", "decide", "Make a Decision"], ["agent", "agent", "AI Agent Demo"], ["impact", "impact", "Your Impact"], ["leaderboard", "trophy", "Leaderboard"], ["help", "help", "Help"]];
+  var CNAV = [["journey", "home", "My Journey"], ["roles", "scenario", "Open Roles"], ["chat", "chat", "Interview Chat"], ["help", "help", "Help"]];
+  var TITLES = { overview: "Hiring command centre", scenario: "Scenario", decide: "The Hiring Floor", agent: "AI Agent Demo", impact: "Your Impact", leaderboard: "Leaderboard", help: "Help", journey: "My Journey", roles: "Open Roles", chat: "Interview Chat" };
+  var cartArt = `<svg viewBox="0 0 120 90" class="cart" aria-hidden="true"><rect x="62" y="30" width="30" height="26" rx="3" fill="#c99556"/><rect x="74" y="30" width="6" height="26" fill="#e8c78d" opacity=".8"/><rect x="44" y="40" width="26" height="20" rx="3" fill="#b68446"/>
+  <path d="M10 18h14l10 40h50l8-28H30" fill="none" stroke="#9b7cf6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="42" cy="72" r="6" fill="#9b7cf6"/><circle cx="78" cy="72" r="6" fill="#9b7cf6"/></svg>`;
+  function topbar(p) {
+    const rounds = [["1", "Day 1-3"], ["2", "Day 4-7"], ["3", "Day 8-10"], ["4", "Day 11-13"]];
+    return `<header class="top"><div class="brand">${ic("cart")}<b>Halcyon<br>Basket</b></div><p class="tag">Delivering more<br>to every home</p>
+    <ol class="rounds" aria-label="Game rounds">${rounds.map(([n, d], i) => `<li class="${i === 0 ? "now" : "locked"}" title="${i === 0 ? "Round 1 is playable" : "Coming soon"}"><span class="rn">${n}</span><div><b>${d}</b><small>${i === 0 ? "People &amp; Workforce" : "Coming soon"}</small></div></li>`).join("")}
+    <li class="locked"><span class="rn">${ic("check")}</span><div><b>Day 14</b><small>Board Review</small></div></li></ol>
+    <button class="icon" aria-label="Notifications">${ic("bell")}</button>
+    <div class="me">${avatar(p.name, 38)}<div><b>${esc(p.name)}</b><small>${p.role === "recruiter" ? "Recruiter" : "Candidate"}</small></div><button class="icon" aria-label="Sign out" title="Sign out" onclick="act('logout')">${ic("out")}</button></div></header>`;
+  }
+  function rail(p) {
+    const nav = p.role === "recruiter" ? RNAV : CNAV;
+    return `<nav class="rail" aria-label="Main">${nav.map(([k, i, l]) => `<button class="nav ${ui.view === k ? "on" : ""}" ${ui.view === k ? 'aria-current="page"' : ""} onclick="act('go','${k}')">${ic(i)}<span>${l}</span></button>`).join("")}
+    <div class="promo">${cartArt}<b>Festival Sale</b><small>Be Ready. Deliver More.</small><button class="linkb" onclick="act('wipe')">Reset all game data</button></div></nav>`;
+  }
+  function login() {
+    const rc = role === "recruiter";
+    return `<div class="login"><section class="lhero"><div class="brand big">${ic("cart")}<b>Halcyon Basket</b></div>
+    <h1>${rc ? "You decide who gets hired." : "You are the one waiting for the call."}</h1>
+    <p>${rc ? "600 festival jobs. 8,400 applicants. 12 tired recruiters. Use an AI agent, and keep people in charge." : "Apply for a festival job, chat with the screening assistant, and see exactly why the system decided what it did."}</p>
+    <div class="lstats"><div><b class="num">8,400</b><small>applications in 2 days</small></div><div><b class="num">3</b><small>human gates</small></div><div><b class="num">4</b><small>ways to hire</small></div></div></section>
+    <section class="lcard"><div class="seg2" role="tablist" aria-label="Choose your role">${["recruiter", "candidate"].map((r) => `<button role="tab" aria-selected="${role === r}" data-k="role-${r}" onclick="act('role','${r}')">${ic(r === "recruiter" ? "decide" : "user")}<b>${r === "recruiter" ? "Recruiter" : "Candidate"}</b><small>${r === "recruiter" ? "Create the scenario and run the hiring" : "Apply and get hired"}</small></button>`).join("")}</div>
+    <label class="field col"><b>Your name</b><input id="nm" class="text" data-k="nm" maxlength="30" placeholder="${rc ? "For example: Shreya" : "For example: Priya"}" onkeydown="if(event.key==='Enter')act('login')"></label>
+    <button class="btn primary wide" data-k="go" onclick="act('login')">Continue as ${rc ? "Recruiter" : "Candidate"} ${ic("send")}</button>
+    <p class="hint">No password: this is a classroom game. To see both sides at once, open this page in a second tab and sign in as the other role.</p></section></div>`;
+  }
+  function app(p) {
+    ui.charts = [];
+    const v = ui.view;
+    const body = p.role === "recruiter" ? ({ overview, scenario: scenarioView, decide, agent: agentDemo, impact, leaderboard, help }[v] ?? overview)() : ({ journey, roles, chat, help: cHelp }[v] ?? roles)();
+    let meters = "";
+    if (p.role === "recruiter") {
+      const pl = playOf();
+      if (pl?.choice) {
+        const r = result(pl, db.scenario, db.cands);
+        meters = meterRow(r.measures, r.deltas, pl.day < 4);
+      } else
+        meters = meterRow(START);
+    }
+    return `${topbar(p)}<div class="shell">${rail(p)}<main id="main" tabindex="-1"><div class="pagehead"><h1>${TITLES[v] ?? ""}</h1></div>${meters}${body}</main></div>`;
+  }
+  function draw() {
+    charts.forEach((c) => c.destroy());
+    charts = [];
+    if (typeof Chart === "undefined") {
+      document.querySelectorAll(".chart").forEach((e) => e.innerHTML = '<p class="hint">Charts need an internet connection to load.</p>');
+      return;
+    }
+    Chart.defaults.color = "#aab0cf";
+    Chart.defaults.borderColor = "rgba(255,255,255,.07)";
+    Chart.defaults.font.family = "Instrument Sans, system-ui, sans-serif";
+    ui.charts.forEach(({ id, cfg }) => {
+      const el = document.getElementById(id);
+      if (!el)
+        return;
+      const o = cfg.options ?? {};
+      charts.push(new Chart(el, { ...cfg, options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 450 },
+        ...o,
+        plugins: { ...o.plugins ?? {}, legend: { ...o.plugins?.legend ?? {}, labels: { usePointStyle: true, boxWidth: 8 } } }
+      } }));
+    });
+  }
+  function paint() {
+    const root = document.getElementById("app"), fk = document.activeElement?.dataset?.k, nm = document.getElementById("nm")?.value;
+    const p = me();
+    if (p && !ui.view)
+      ui.view = p.role === "recruiter" ? "overview" : mine() ? "journey" : "roles";
+    root.innerHTML = (p ? app(p) : login()) + (ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : "");
+    if (!p && nm)
+      document.getElementById("nm").value = nm;
+    document.title = p ? `${TITLES[ui.view] ?? "Halcyon"} · Halcyon People & Workforce` : "Halcyon People & Workforce Simulator";
+    draw();
     if (fk)
       document.querySelector(`[data-k="${fk}"]`)?.focus({ preventScroll: true });
-  }
-  window.act = (k, v) => {
-    if (k === "choice") {
-      st.choice = v;
-      st.decision = "";
-      st.confirm = false;
-      st.seen.clear();
-    } else if (k === "decision") {
-      st.decision = v;
-      st.confirm = false;
-      render();
-      document.querySelector('[data-k="result"]')?.focus();
-      return;
-    } else if (k === "confirm")
-      st.confirm = v;
-    else if (k === "demo")
-      st.demo = v;
-    else if (k === "reset") {
-      st.choice = "";
-      st.decision = "";
-      st.confirm = false;
-      st.seen.clear();
-      st.prev = { ...START };
-      st.lim = { ...DEFAULT_HIRING_LIMITS };
-      window.scrollTo({ top: 0 });
-    } else if (k === "copy") {
-      const t = $("talk").innerText;
-      (navigator.clipboard?.writeText(t) ?? Promise.reject()).then(() => alert("Copied"), () => alert("Select the text above and copy it."));
-      return;
-    } else {
-      st.lim = { ...st.lim, [k === "idLate" ? "idFirst" : k]: k === "idLate" ? !v : v };
-      st.decision = "";
-      st.confirm = false;
-      st.seen.delete("stampapprove");
-      st.seen.delete("stampsignoff");
+    if (bump) {
+      bump = false;
+      const m = document.querySelectorAll(".stack .msg, .stack .gate");
+      m[m.length - 1]?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-    render();
+  }
+  setRender(paint);
+  window.act = (a, ...r) => {
+    if (a === "go") {
+      ui.view = r[0];
+      paint();
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    if (a === "role") {
+      role = r[0];
+      paint();
+      return;
+    }
+    if (a === "login") {
+      const p = signIn(role, document.getElementById("nm")?.value ?? "");
+      ui.view = "";
+      paint();
+      toast("Welcome, " + p.name);
+      return;
+    }
+    if (a === "logout") {
+      signOut();
+      ui.view = "";
+      paint();
+      return;
+    }
+    if (a === "wipe") {
+      if (confirm("Erase all scenarios, candidates and scores on this browser?")) {
+        reset();
+        signOut();
+        ui.view = "";
+        paint();
+      }
+      return;
+    }
+    if (["case", "decision", "run", "day", "finish"].includes(a))
+      bump = true;
+    if (ract(a, ...r) || cact(a, ...r))
+      return;
   };
-  render();
+  onRemoteChange(paint);
+  paint();
 })();
 </script></body></html>
