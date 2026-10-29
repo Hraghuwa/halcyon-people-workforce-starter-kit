@@ -12,10 +12,13 @@ This folder holds the tested core of our simulation. The build guide (Word docum
 | `src/engine/game.ts` | Game rules: play a round, budget, board rule, company score, integration contract |
 | `src/engine/shiftFillAgent.ts` | The Shift-Fill Agent (Round 2): Perceive, Plan, Act, Reflect on synthetic staff |
 | `src/engine/hiringAgent.ts` | Round 1 hiring agent with three human gates (ID review, fairness sign-off, recruiter approval) |
+| `simulator.html` | Playable Round 1 screen (built from `src/ui/`) |
 | `src/engine/hiringAgent.test.ts` | Tests for the hiring gates |
 | `docs/adr/0001-round1-hiring-human-in-the-loop.md` | Design decision and reasoning for Round 1 |
 | `src/engine/game.test.ts` | Tests that prove the engine matches the Scenario Sheet |
 | `scripts/enumerate.ts` | Plays all 256 paths to check no single trick always wins |
+
+Play Round 1: open `simulator.html` in a browser (rebuild with `bun scripts/build-ui.ts` after changing `src/`).
 
 Check it works (Node.js 22.6 or newer):
 

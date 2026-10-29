@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Halcyon People Workforce Simulator</title>
+<style>
+:root{--bg:#f6f5f1;--fg:#1d1d1b;--mut:#6b6a63;--card:#fff;--line:#dedcd3;--ok:#1f7a4d;--bad:#b3261e;--acc:#2b4acb}
+@media(prefers-color-scheme:dark){:root{--bg:#141413;--fg:#ececE6;--mut:#9a988f;--card:#1e1e1c;--line:#34332f;--ok:#58c58c;--bad:#ff8a80;--acc:#8fa6ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+#app{max-width:880px;margin:0 auto;padding:20px 16px 60px}h1{font-size:24px;margin:2px 0 6px}small{color:var(--mut)}.muted{color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:16px 0}
+.choice{text-align:left;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;font:inherit}
+.choice.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}.choice span{font-size:13px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}h3{margin:0 0 8px}h4{margin:16px 0 6px}
+label{display:block;margin:8px 0}input[type=range]{vertical-align:middle;margin-left:8px}
+.funnel{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.funnel div{border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;color:var(--mut)}.funnel b{display:block;font-size:20px;color:var(--fg)}
+.row{display:grid;grid-template-columns:150px 1fr 48px;gap:8px;align-items:center;margin:4px 0}.bar{height:10px;background:var(--line);border-radius:5px}.bar i{display:block;height:100%;background:var(--acc);border-radius:5px}
+button{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;margin:4px 6px 4px 0}
+button.go{background:var(--ok);color:#fff;border-color:var(--ok)}button.warn{border-color:var(--bad);color:var(--bad)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}em{font-size:12px;font-style:normal}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}.scores div{border:1px solid var(--line);border-radius:8px;padding:8px}.scores b{font-size:24px;display:block}
+</style></head><body><div id="app"></div><script>/*BUNDLE*/</script></body></html>

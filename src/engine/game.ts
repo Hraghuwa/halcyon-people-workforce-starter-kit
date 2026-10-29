@@ -72,7 +72,8 @@ export function availability(s: Scenario, g: GameState, budget = s.shared.teamBu
 }
 
 export function playRound(s: Scenario, g: GameState, choiceId: ChoiceId,
-                          limits: AgentLimits = DEFAULT_LIMITS, surprise = false): GameState {
+                          limits: AgentLimits = DEFAULT_LIMITS, surprise = false,
+                          hiring?: { now: Measures; carry: Measures }): GameState {
   if (g.finished) throw new Error("Game is over");
   const r = s.rounds.find(x => x.round === g.round)!;
   const c = r.choices.find(x => x.id === choiceId)!;
@@ -84,6 +85,11 @@ export function playRound(s: Scenario, g: GameState, choiceId: ChoiceId,
     const m = limitModifiers(limits);
     MEASURES.forEach(k => { deltas[k] += m.now[k]; carry[k] += m.carry[k]; });
     if (MEASURES.some(k => m.carry[k] !== 0)) note.push("Loose agent limits: extra burnout carried into Round 4");
+  }
+  // Round 1 hiring agent: the player's gate decisions and settings (see hiringAgent.ts hiringModifiers).
+  if (g.round === 1 && choiceId === "agent" && hiring) {
+    MEASURES.forEach(k => { deltas[k] += hiring.now[k]; carry[k] += hiring.carry[k]; });
+    note.push("Round 1 hiring settings applied");
   }
   // Optional surprise card: hits only the choices listed for it in the data file.
   const hit = surprise ? r.surprise?.effects[choiceId] : undefined;

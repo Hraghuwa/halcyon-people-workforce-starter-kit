@@ -32,6 +32,9 @@ g = newGame(s); g = playRound(s, g, "person"); g = playRound(s, g, "agent", { ma
 assert.deepEqual(g.carry, { revenue: 0, trust: 0, morale: -3, risk: 3 });
 g = playRound(s, g, "person"); g = playRound(s, g, "genai");
 assert.equal(g.history.at(-1)!.deltas.morale, 1);
+// 7b. Round 1 hiring result flows into the score: overruling a failed fairness gate adds Risk 3 and Trust -2.
+g = playRound(s, newGame(s), "agent", undefined, false, { now: { revenue: 0, trust: -2, morale: 0, risk: 3 }, carry: { revenue: 0, trust: 0, morale: 1, risk: 0 } });
+assert.equal(g.history[0].deltas.risk, 6); assert.equal(g.history[0].deltas.trust, 0); assert.equal(g.carry.morale, 1);
 // 8. Integration contract publishes plain numbers.
 const t = moduleTurn(s, newGame(s), "agent");
 assert.equal(t.publish.staffingCoverage, 90); assert.equal(t.publish.costUnits, 15);

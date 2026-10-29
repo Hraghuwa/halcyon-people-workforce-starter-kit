@@ -70,8 +70,9 @@ Fastest (600 offers by Day 2) but breaks Governance rule 3, costs 30 units, and 
 
 The gates cost speed, and they are cheap next to the failure they prevent. Running the synthetic data (seeded, 8,400 applicants) showed two real problems:
 
-- **Ranking by distance alone fails fairness.** The selection-rate ratio was **0.57** (low-income pin codes 7.7% against 13.5% for others). The gate blocks it. With pin-group quotas the ratio is **0.99**.
-- **The ID-review queue overflows.** 832 applicants need ID review against capacity of 240, so 592 are deferred. The recruiters are the real bottleneck, not the screening. The human step needs a design (more reviewers, a second ID provider, or a "verify at joining" path), not a bigger agent.
+- **Ranking by distance alone fails fairness.** The selection-rate ratio was **0.63**, and the gate blocks it. Reserving places per pin-code group lifts it to **0.90**. It costs about 1 point of 30-day retention (64% to 63%), a trade-off the player can see.
+- **Checking every ID first swamps recruiters.** That gives 773 ID cases against capacity of 240. Ranking first and checking IDs only for the shortlist gives **79 cases**, which fits. Put the expensive human step after the cheap filter.
+- **Overruling a failed gate is possible but costly.** A lead can sign off, and the game then adds Risk +3 and Trust -2. Holding offers costs Revenue instead.
 
 ## Consequences
 
@@ -86,8 +87,8 @@ The gates cost speed, and they are cheap next to the failure they prevent. Runni
 ## Action Items
 
 1. [x] `hiringAgent.ts` with the three gates, and `hiringAgent.test.ts`.
-2. [ ] Wire hiring limits into `game.ts` like `limitModifiers` for Round 2: looser review capacity or no balancing raises Risk and Trust damage.
+2. [x] Hiring settings feed the Round 1 score through `hiringModifiers` and `playRound`.
 3. [ ] Fill sheet tab **5 Agent moment** for Round 1 (it is blank in `Halcyon_Scenario_Sheet_People_and_Workforce_Round1.xlsx`) using the flow above, and tab **4 Productivity** (unit: applications screened per recruiter-day; baseline 60; the counter-measure is fairness and the ID-review backlog).
 4. [ ] Pilot plan in the sheet: 2 cities for 24 hours, measuring time-to-hire, show-up rate and shortlist make-up.
-5. [ ] Show the three gates in the UI: review queue size, fairness ratio, offers awaiting approval.
+5. [x] `simulator.html` shows the gates: ID queue, fairness bars, approval buttons.
 6. [ ] Decide who the "lead" is and how sign-off is recorded.

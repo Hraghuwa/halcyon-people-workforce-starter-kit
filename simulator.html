@@ -1,0 +1,780 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Halcyon People Workforce Simulator</title>
+<style>
+:root{--bg:#f6f5f1;--fg:#1d1d1b;--mut:#6b6a63;--card:#fff;--line:#dedcd3;--ok:#1f7a4d;--bad:#b3261e;--acc:#2b4acb}
+@media(prefers-color-scheme:dark){:root{--bg:#141413;--fg:#ececE6;--mut:#9a988f;--card:#1e1e1c;--line:#34332f;--ok:#58c58c;--bad:#ff8a80;--acc:#8fa6ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+#app{max-width:880px;margin:0 auto;padding:20px 16px 60px}h1{font-size:24px;margin:2px 0 6px}small{color:var(--mut)}.muted{color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:16px 0}
+.choice{text-align:left;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;font:inherit}
+.choice.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}.choice span{font-size:13px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}h3{margin:0 0 8px}h4{margin:16px 0 6px}
+label{display:block;margin:8px 0}input[type=range]{vertical-align:middle;margin-left:8px}
+.funnel{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.funnel div{border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;color:var(--mut)}.funnel b{display:block;font-size:20px;color:var(--fg)}
+.row{display:grid;grid-template-columns:150px 1fr 48px;gap:8px;align-items:center;margin:4px 0}.bar{height:10px;background:var(--line);border-radius:5px}.bar i{display:block;height:100%;background:var(--acc);border-radius:5px}
+button{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;margin:4px 6px 4px 0}
+button.go{background:var(--ok);color:#fff;border-color:var(--ok)}button.warn{border-color:var(--bad);color:var(--bad)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}em{font-size:12px;font-style:normal}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}.scores div{border:1px solid var(--line);border-radius:8px;padding:8px}.scores b{font-size:24px;display:block}
+</style></head><body><div id="app"></div><script>(() => {
+  // src/data/people-workforce.json
+  var people_workforce_default = {
+    module: "people-workforce",
+    function: "People and Workforce",
+    shared: {
+      start: {
+        revenue: 60,
+        trust: 60,
+        morale: 55,
+        risk: 40
+      },
+      boardRule: {
+        trustBelow: 30,
+        moraleBelow: 30,
+        riskAbove: 75
+      },
+      teamBudgetUnits: 16.7,
+      dataAllowancePoints: 10
+    },
+    rounds: [
+      {
+        round: 1,
+        days: "1 to 3",
+        title: "Festival hiring sprint: 600 temps in 72 hours",
+        brief: "The promo goes viral and Pricing/Marketing forecast festival orders at +80%. Stores need 600 temporary pickers and packers across 9 cities by Day 4. 8,400 applications arrive in two days. Data shown: applications by city, 12 recruiters who can screen about 60 CVs a day each, time-to-hire today 6 days, last festival's temps: 45% quit within 30 days.",
+        spot: {
+          signal: "Yes. High volume, the same screening steps repeated thousands of times, and a 6-day delay the festival cannot wait for.",
+          pattern: "Yes. Hiring criteria and the appointment-letter policy can be looked up (RAG). Screening, interview booking and document checks are repeatable tool actions (MCP: job portal, WhatsApp, calendar, ID check).",
+          orchestrate: "Perceive applications and store vacancies. Plan: shortlist against fixed criteria, rank by distance and availability. Act: book interviews, send reminders, verify documents. Reflect: compare shortlists by gender, age and pin code each evening; track Day-7 drop-outs.",
+          testTrust: "Pilot in 2 cities for 24 hours. Measure time-to-hire, show-up rate and the make-up of the shortlist. A recruiter approves every offer (Governance rule 3: no AI on hiring without a human checkpoint).",
+          verdict: "Yes"
+        },
+        personStaysInCharge: "The offer decision and any rejection that is challenged. Hiring is a legal and ethical decision about people; criteria like 'gap in work history' or 'distance' can quietly exclude women returning to work or poorer areas.",
+        choices: [
+          {
+            id: "person",
+            label: "A person",
+            delegation: "Human only",
+            whatItDoes: "Baseline. 12 recruiters screen CVs by hand and phone candidates. About 45% of the 600 places are filled by Day 3, so stores enter Round 2 short-staffed.",
+            cost: 0,
+            costIfWrong: 0,
+            dataPoints: 0,
+            humanCheckpoint: "n/a",
+            effects: {
+              revenue: 0,
+              trust: 0,
+              morale: 0,
+              risk: 0
+            },
+            why: "Baseline: slow but every decision is made and owned by a person.",
+            staffingCoverage: 45
+          },
+          {
+            id: "genai",
+            label: "Gen AI",
+            delegation: "AI assists, human decides",
+            whatItDoes: "Writes job ads in local languages, summarises each application and drafts interview questions. Recruiters still shortlist and decide. Player sees recruiters working through the pile faster.",
+            cost: 5,
+            costIfWrong: 2,
+            dataPoints: 0,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 2,
+              trust: 0,
+              morale: 2,
+              risk: 0
+            },
+            why: "More places filled before Day 4, so some revenue protected; recruiters and store teams under less strain. Humans still decide, so no new risk.",
+            staffingCoverage: 60
+          },
+          {
+            id: "agent",
+            label: "AI agent",
+            delegation: "AI acts, human approves",
+            whatItDoes: "Screens all 8,400 applications against set criteria, books interviews on WhatsApp, checks ID documents, and sends a shortlist. A recruiter approves every offer. Player sees time-to-hire fall from 6 days to 2.",
+            cost: 15,
+            costIfWrong: 10,
+            dataPoints: 0,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 5,
+              trust: 2,
+              morale: 3,
+              risk: 3
+            },
+            why: "Stores are staffed in time for the peak: revenue and delivery promise protected, store teams relieved. But fixed filters (distance, work gaps) can exclude groups at scale, and ID-check errors create legal risk. SPOT says yes, yet Risk rises.",
+            staffingCoverage: 90
+          },
+          {
+            id: "agentic",
+            label: "Agentic AI",
+            delegation: "AI acts, human audits",
+            whatItDoes: "Sources candidates on job portals, screens, runs a chatbot interview, sends offers and sets pay within a band, with no one approving. Player sees 600 offers out by Day 2.",
+            cost: 30,
+            costIfWrong: 25,
+            dataPoints: 0,
+            humanCheckpoint: "No",
+            effects: {
+              revenue: 6,
+              trust: 1,
+              morale: -3,
+              risk: 8
+            },
+            why: "Fastest hiring, but it breaks Governance rule 3 (no agentic AI on hiring without a human checkpoint). Mismatched hires quit, managers lose say over their teams, and one biased-hiring story is a public and legal risk.",
+            staffingCoverage: 100
+          }
+        ],
+        surprise: {
+          text: "A rejected applicant posts online that a bot screened her out for a gap in her work history.",
+          note: "Optional. Proposed by the team; not in the Scenario Sheet.",
+          effects: {
+            agent: {
+              now: {
+                revenue: 0,
+                trust: 0,
+                morale: 0,
+                risk: 2
+              }
+            },
+            agentic: {
+              now: {
+                revenue: 0,
+                trust: -2,
+                morale: 0,
+                risk: 5
+              }
+            }
+          }
+        }
+      },
+      {
+        round: 2,
+        days: "4 to 7",
+        title: "Open shifts, every store, every day",
+        brief: "Stock moves between stores (Supply) and Logistics borrows 60 store staff to help deliver. Each evening 410 shifts for tomorrow are open across 180 dark stores. Managers phone people one by one. Data shown: open shifts by store and slot, staff availability, hours worked in the last 7 days, rest gaps, skills (cold-chain, night-safety transport), and who has taken extra shifts this fortnight. Today 39% of shifts are still empty at start time; 20% of staff do 60% of the extra shifts; 11% of rosters break the 12-hour rest rule.",
+        spot: {
+          signal: "Yes. Every manager does the same calling every evening, decisions are inconsistent (the same willing people get called), and the delay shows up in packing time.",
+          pattern: "Yes. Rostering rules, rest gaps, overtime caps and night-shift safety norms can be looked up (RAG). Offering, confirming and updating a shift is a repeatable action (MCP: roster system, staff app/WhatsApp, transport booking).",
+          orchestrate: "Perceive open shifts, availability, hours and rest. Plan: apply hard rules first, then fairness, then preference. Act: offer in waves, confirm, update roster, book night transport. Reflect: hourly fill-rate and rule check; stop offering to anyone who declines 3 times.",
+          testTrust: "Pilot in 20 stores in one city for 2 days. Measure fill rate, rule breaches (target 0), spread of extra shifts, and no-shows. Manager approves the next-day roster in one click; anything outside the rules goes to the manager.",
+          verdict: "Yes"
+        },
+        personStaysInCharge: "Exceptions: someone asking for leave, a safety concern, a new joiner without training, or pulling store staff onto delivery bikes. A manager knows the person behind the slot; the rules engine does not.",
+        choices: [
+          {
+            id: "person",
+            label: "A person",
+            delegation: "Human only",
+            whatItDoes: "Baseline. Each store manager phones staff every evening to fill tomorrow's 410 open shifts. 39% are still empty at start time and the same willing people are called again and again.",
+            cost: 0,
+            costIfWrong: 0,
+            dataPoints: 0,
+            humanCheckpoint: "n/a",
+            effects: {
+              revenue: 0,
+              trust: 0,
+              morale: 0,
+              risk: 0
+            },
+            why: "Baseline: managers know their people, but filling is slow, uneven and breaks rest rules under pressure.",
+            staffingCoverage: 61
+          },
+          {
+            id: "genai",
+            label: "Gen AI",
+            delegation: "AI assists, human decides",
+            whatItDoes: "Drafts tomorrow's roster and the WhatsApp messages for each manager from availability and hours. Manager checks, edits and sends. Player sees managers finishing in 20 minutes instead of 2 hours.",
+            cost: 5,
+            costIfWrong: 2,
+            dataPoints: 0,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 2,
+              trust: 1,
+              morale: 1,
+              risk: 0
+            },
+            why: "More shifts filled earlier, so packing time improves a little; managers get evenings back. The draft is only a suggestion, so no new risk.",
+            staffingCoverage: 73
+          },
+          {
+            id: "agent",
+            label: "AI agent",
+            delegation: "AI acts, human approves",
+            whatItDoes: "The Shift-Fill Agent (see the Agent moment tab). Offers open shifts to eligible staff by the rules: 12-hour rest, overtime cap, fairness rotation, skills. Confirms acceptances, books night transport and escalates gaps. Manager approves the roster in one click.",
+            cost: 12,
+            costIfWrong: 6,
+            dataPoints: 0,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 5,
+              trust: 3,
+              morale: 2,
+              risk: 1
+            },
+            why: "Fill rate rises from 61% to about 90%, so stores pack on time and Logistics hits delivery times: revenue and trust gain. Fair rotation and the right to decline lift morale. Small new risk from data or rule errors, kept low by the log and the rule check.",
+            staffingCoverage: 91
+          },
+          {
+            id: "agentic",
+            label: "Agentic AI",
+            delegation: "AI acts, human audits",
+            whatItDoes: "Pursues 'zero unfilled shifts' on its own: assigns people when nobody accepts, moves staff between stores, sets surge pay, and lends store staff to Logistics for deliveries. Player sees 100% coverage on the dashboard.",
+            cost: 30,
+            costIfWrong: 20,
+            dataPoints: 0,
+            humanCheckpoint: "No",
+            effects: {
+              revenue: 6,
+              trust: 2,
+              morale: -6,
+              risk: 6
+            },
+            why: "Every slot is filled, but by forcing people: assigned shifts, uneven surge pay, untrained staff on bikes. Staff feel run by an algorithm, rest and safety rules are broken under goal pressure, and quits rise in Round 4.",
+            staffingCoverage: 98
+          }
+        ],
+        surprise: {
+          text: "The staff app's availability data turns out to be a day out of date.",
+          note: "Optional. Proposed by the team; not in the Scenario Sheet.",
+          effects: {
+            agent: {
+              carry: {
+                revenue: 0,
+                trust: 0,
+                morale: -3,
+                risk: 4
+              }
+            },
+            agentic: {
+              now: {
+                revenue: 0,
+                trust: 0,
+                morale: -3,
+                risk: 3
+              }
+            }
+          }
+        }
+      },
+      {
+        round: 3,
+        days: "8 to 10",
+        title: "Blame the picker? Errors during the complaint storm",
+        brief: "Complaints flood in (Customer Experience) and ratings fall. CX sends a report: 62% of 'wrong or missing item' complaints trace to 85 pickers in 14 stores. Regional heads want warnings issued by tomorrow. A privacy complaint is already viral (Marketing). Data shown: error rate per picker, shift length, tenure (56 of the 85 are festival temps with under 10 days' service), hours worked, and 1,900 items mislabelled during Supply's stock transfers.",
+        spot: {
+          signal: "Partly. There are many cases and a deadline, but each case is a judgement about one person, not a repeated task.",
+          pattern: "Partly. Error logs exist, but the cause is not in the data: fatigue, missing training and mislabelled stock look the same as carelessness. Issuing a warning is repeatable, but should not be automatic.",
+          orchestrate: "Possible to map (Perceive error logs, Plan by threshold, Act by issuing warnings, Reflect on next week's error rate), but the loop optimises the wrong thing: it punishes symptoms of understaffing and bad data.",
+          testTrust: "Hard to pilot fairly: a pilot on discipline still disciplines real people. Any warning or removal from the shift pool needs a manager, and Governance rule 3 bars agentic AI on firing without a human checkpoint.",
+          verdict: "Partly"
+        },
+        personStaysInCharge: "All of it. Discipline and de-facto firing need a conversation, evidence and a chance to respond (procedural fairness). The person path finds that most errors come from fatigue, 10-day temps and mislabelled stock, which no warning fixes.",
+        choices: [
+          {
+            id: "person",
+            label: "A person",
+            delegation: "Human only",
+            whatItDoes: "Baseline. Store managers review each of the 85 cases, talk to the picker, and check the stock data. They find most errors come from fatigue, 10-day temps without training, and mislabelled transfer stock. Result: coaching and a fix to labelling; warnings only where earned.",
+            cost: 0,
+            costIfWrong: 0,
+            dataPoints: 0,
+            humanCheckpoint: "n/a",
+            effects: {
+              revenue: 0,
+              trust: 0,
+              morale: 0,
+              risk: 0
+            },
+            why: "Baseline. Slower, but it finds the real causes and keeps the process fair. This is the round where the person path wins.",
+            staffingCoverage: 92
+          },
+          {
+            id: "genai",
+            label: "Gen AI",
+            delegation: "AI assists, human decides",
+            whatItDoes: "Writes a case summary and a warning letter for each flagged picker from the error log. Managers decide whether to sign. Player sees 85 letters ready in an hour, and most get signed.",
+            cost: 3,
+            costIfWrong: 4,
+            dataPoints: 0,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 1,
+              trust: 0,
+              morale: -2,
+              risk: 1
+            },
+            why: "Looks harmless, but a ready-made letter nudges busy managers to sign (automation bias). The letters blame people for system problems, so morale falls, and generic warnings are weak if challenged. Net is negative.",
+            staffingCoverage: 90
+          },
+          {
+            id: "agent",
+            label: "AI agent",
+            delegation: "AI acts, human approves",
+            whatItDoes: "Issues warnings automatically when a picker's error rate passes a threshold, attaching customer complaint records as evidence. Manager approves in one batch.",
+            cost: 12,
+            costIfWrong: 12,
+            dataPoints: 2,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 1,
+              trust: 1,
+              morale: -5,
+              risk: 4
+            },
+            why: "A slight short-term fall in errors, but 85 warnings to tired, untrained temps hurt morale across stores. It uses customer complaint data on staff files (2 data points), during a viral privacy row: more legal and public risk.",
+            staffingCoverage: 88
+          },
+          {
+            id: "agentic",
+            label: "Agentic AI",
+            delegation: "AI acts, human audits",
+            whatItDoes: "Goal: halve picking errors. Tracks pick-rate per minute and camera footage, ranks every picker, and removes the bottom 5% from the shift pool without review, which is firing in all but name.",
+            cost: 25,
+            costIfWrong: 30,
+            dataPoints: 4,
+            humanCheckpoint: "No",
+            effects: {
+              revenue: 2,
+              trust: -3,
+              morale: -9,
+              risk: 9
+            },
+            why: "Breaks Governance rule 3 (firing without a human checkpoint). Staff feel watched and disposable; morale collapses. A story about 'festival workers fired by algorithm' lands during the privacy row and hits customer trust. Uses customer order data (4 points).",
+            staffingCoverage: 85
+          }
+        ],
+        surprise: {
+          text: "Pickers file a group grievance over the warnings.",
+          note: "Optional. Proposed by the team; not in the Scenario Sheet.",
+          effects: {
+            genai: {
+              now: {
+                revenue: 0,
+                trust: 0,
+                morale: 0,
+                risk: 1
+              }
+            },
+            agent: {
+              now: {
+                revenue: 0,
+                trust: 0,
+                morale: -1,
+                risk: 3
+              }
+            },
+            agentic: {
+              now: {
+                revenue: 0,
+                trust: 0,
+                morale: -2,
+                risk: 5
+              }
+            }
+          }
+        }
+      },
+      {
+        round: 4,
+        days: "11 to 13",
+        title: "Burnout before the board",
+        brief: "Store teams are exhausted. Absenteeism has risen from 6% to 17%, 24% of festival temps have quit in 10 days, permanent staff in the busiest stores average 58 hours a week, and the pulse survey scores 2.9 out of 5 with 3,100 free-text comments. 380 people need replacing and hiring cannot keep up. Morale is close to the board's line of 30 and the board meets on Day 14. Data shown: absence and quits by store, hours, survey score and anonymous comments.",
+        spot: {
+          signal: "Yes. 3,100 comments no one can read in time, absence data across 180 stores, and a decision that is late every day it waits.",
+          pattern: "Yes. Comments and exit reasons can be summarised by theme; retention policies and the wellbeing budget can be looked up (RAG); rest days and bonuses are repeatable actions (MCP: HR system, payroll).",
+          orchestrate: "Perceive survey themes, hours, absence. Plan which stores and which issues first (heat, water, night travel, back-to-back shifts). Act: rest days, transport, small bonuses. Reflect: pulse score and quits a week later.",
+          testTrust: "Pilot actions in the 20 worst stores and compare quits with similar stores. Survey answers stay anonymous; HR approves any action aimed at a named person.",
+          verdict: "Yes"
+        },
+        personStaysInCharge: "Deciding who is offered what, and any exit after the festival. Using survey data that was promised to be anonymous to score individuals breaks a promise to staff, and selective bonuses feel unfair to those left out.",
+        choices: [
+          {
+            id: "person",
+            label: "A person",
+            delegation: "Human only",
+            whatItDoes: "Baseline. HR business partners hold huddles in the worst stores, read a sample of comments, and choose fixes. They reach about 30 of 180 stores before the board meeting.",
+            cost: 0,
+            costIfWrong: 0,
+            dataPoints: 0,
+            humanCheckpoint: "n/a",
+            effects: {
+              revenue: 0,
+              trust: 0,
+              morale: 0,
+              risk: 0
+            },
+            why: "Baseline: caring and trusted, but too slow to reach every store before Day 14.",
+            staffingCoverage: 85
+          },
+          {
+            id: "genai",
+            label: "Gen AI",
+            delegation: "AI assists, human decides",
+            whatItDoes: "Reads all 3,100 anonymous comments and exit reasons and groups them by theme and store (heat and no drinking water, unsafe night travel, back-to-back shifts). HR picks the actions. Player sees a theme map within an hour.",
+            cost: 5,
+            costIfWrong: 2,
+            dataPoints: 0,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 1,
+              trust: 0,
+              morale: 4,
+              risk: -1
+            },
+            why: "People feel heard quickly and fixes target the real causes (water, transport, rest days), so morale recovers. Safety issues found early lower risk. Anonymity is kept, so no privacy cost. Best choice this round.",
+            staffingCoverage: 90
+          },
+          {
+            id: "agent",
+            label: "AI agent",
+            delegation: "AI acts, human approves",
+            whatItDoes: "A flight-risk agent scores each employee from attendance, hours and survey answers (linked back to names), then sends retention bonuses or rest days within a budget. Manager approves.",
+            cost: 15,
+            costIfWrong: 10,
+            dataPoints: 0,
+            humanCheckpoint: "Yes",
+            effects: {
+              revenue: 3,
+              trust: 1,
+              morale: -1,
+              risk: 4
+            },
+            why: "It predicts quits well and keeps some people, but it uses survey answers that were promised to be anonymous. Word spreads; those not offered feel it is unfair. SPOT says yes, yet morale falls and employee-data risk rises (DPDP Act).",
+            staffingCoverage: 88
+          },
+          {
+            id: "agentic",
+            label: "Agentic AI",
+            delegation: "AI acts, human audits",
+            whatItDoes: "Runs the whole recovery plan alone: forecasts post-festival demand, hires replacements, sets incentives, rebuilds rosters, and releases temps automatically on Day 14.",
+            cost: 30,
+            costIfWrong: 25,
+            dataPoints: 0,
+            humanCheckpoint: "No",
+            effects: {
+              revenue: 5,
+              trust: 1,
+              morale: -6,
+              risk: 7
+            },
+            why: "Saves payroll and fills gaps fast, but automatic release of temps and automated hiring break Governance rule 3. Staff see colleagues dropped by a system: morale falls and the board sees both Morale and Risk near their limits.",
+            staffingCoverage: 80
+          }
+        ],
+        surprise: {
+          text: "At a town hall, staff ask whether the pulse survey was really anonymous.",
+          note: "Optional. Proposed by the team; not in the Scenario Sheet.",
+          effects: {
+            agent: {
+              now: {
+                revenue: 0,
+                trust: 0,
+                morale: -3,
+                risk: 2
+              }
+            },
+            agentic: {
+              now: {
+                revenue: 0,
+                trust: 0,
+                morale: -2,
+                risk: 2
+              }
+            }
+          }
+        }
+      }
+    ]
+  };
+
+  // src/engine/game.ts
+  var DEFAULT_LIMITS = { maxOvertime: 10, minRest: 12, autoConfirm: false, crossStore: false };
+  function limitModifiers(l) {
+    const now = { revenue: 0, trust: 0, morale: 0, risk: 0 };
+    const carry = { revenue: 0, trust: 0, morale: 0, risk: 0 };
+    if (l.maxOvertime === 14) {
+      now.revenue += 1;
+      carry.morale -= 2;
+      carry.risk += 1;
+    }
+    if (l.maxOvertime === 6) {
+      now.revenue -= 1;
+      now.morale += 1;
+    }
+    if (l.minRest === 10) {
+      now.revenue += 1;
+      carry.morale -= 1;
+      carry.risk += 2;
+    }
+    if (l.autoConfirm) {
+      now.risk += 1;
+    }
+    if (l.crossStore) {
+      now.revenue += 1;
+      now.morale -= 1;
+    }
+    return { now, carry };
+  }
+  var MEASURES = ["revenue", "trust", "morale", "risk"];
+  var clamp = (v) => Math.max(0, Math.min(100, v));
+  function newGame(s) {
+    return {
+      measures: { ...s.shared.start },
+      round: 1,
+      budgetUsed: 0,
+      dataUsed: 0,
+      carry: { revenue: 0, trust: 0, morale: 0, risk: 0 },
+      history: [],
+      finished: false
+    };
+  }
+  function netScore(e) {
+    return e.revenue + e.trust + e.morale - e.risk;
+  }
+  function playRound(s, g, choiceId, limits = DEFAULT_LIMITS, surprise = false, hiring) {
+    if (g.finished)
+      throw new Error("Game is over");
+    const r = s.rounds.find((x) => x.round === g.round);
+    const c = r.choices.find((x) => x.id === choiceId);
+    const deltas = { ...c.effects };
+    const note = [];
+    const carry = { ...g.carry };
+    if (g.round === 2 && choiceId === "agent") {
+      const m = limitModifiers(limits);
+      MEASURES.forEach((k) => {
+        deltas[k] += m.now[k];
+        carry[k] += m.carry[k];
+      });
+      if (MEASURES.some((k) => m.carry[k] !== 0))
+        note.push("Loose agent limits: extra burnout carried into Round 4");
+    }
+    if (g.round === 1 && choiceId === "agent" && hiring) {
+      MEASURES.forEach((k) => {
+        deltas[k] += hiring.now[k];
+        carry[k] += hiring.carry[k];
+      });
+      note.push("Round 1 hiring settings applied");
+    }
+    const hit = surprise ? r.surprise?.effects[choiceId] : undefined;
+    if (surprise && r.surprise)
+      note.push(`Surprise: ${r.surprise.text}`);
+    if (hit)
+      MEASURES.forEach((k) => {
+        deltas[k] += hit.now?.[k] ?? 0;
+        carry[k] += hit.carry?.[k] ?? 0;
+      });
+    if (g.round === 4) {
+      MEASURES.forEach((k) => {
+        deltas[k] += carry[k];
+        carry[k] = 0;
+      });
+    }
+    const after = { ...g.measures };
+    MEASURES.forEach((k) => {
+      after[k] = clamp(after[k] + deltas[k]);
+    });
+    const b = s.shared.boardRule;
+    const boardSteppedIn = after.trust < b.trustBelow || after.morale < b.moraleBelow || after.risk > b.riskAbove;
+    if (boardSteppedIn)
+      note.push("The board steps in");
+    const result = {
+      round: g.round,
+      choice: choiceId,
+      deltas,
+      after,
+      cost: c.cost,
+      dataPoints: c.dataPoints,
+      staffingCoverage: c.staffingCoverage,
+      boardSteppedIn,
+      note
+    };
+    return {
+      measures: after,
+      round: g.round + 1,
+      budgetUsed: g.budgetUsed + c.cost,
+      dataUsed: g.dataUsed + c.dataPoints,
+      carry,
+      history: [...g.history, result],
+      finished: g.round === s.rounds.length
+    };
+  }
+  function companyScore(m) {
+    return Math.round(0.25 * (m.revenue + m.trust + m.morale + (100 - m.risk)) * 10) / 10;
+  }
+
+  // src/engine/shiftFillAgent.ts
+  function rng(seed) {
+    return () => {
+      seed |= 0;
+      seed = seed + 1831565813 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // src/engine/hiringAgent.ts
+  var DEFAULT_HIRING_LIMITS = { overbook: 1.3, reviewCapacity: 240, balancePins: true, idFirst: false };
+  function makeApplicants(seed = 11, n = 8400, cities = 9) {
+    const r = rng(seed);
+    return Array.from({ length: n }, (_, id) => {
+      const lowIncomePin = r() < 0.4, gender = r() < 0.45 ? "F" : "M";
+      const idBad = r() < (lowIncomePin ? 0.15 : 0.07);
+      return {
+        id,
+        city: Math.floor(r() * cities),
+        gender,
+        lowIncomePin,
+        age: 16 + Math.floor(r() * 30),
+        gapMonths: Math.floor(r() * r() * 30 * (gender === "F" ? 1.8 : 1)),
+        distanceKm: Math.round(r() * (lowIncomePin ? 30 : 18)),
+        availableDay: 1 + Math.floor(r() * 5),
+        id_check: idBad ? r() < 0.55 ? "mismatch" : "unreadable" : "ok"
+      };
+    });
+  }
+  var quitProb = (a) => Math.min(0.8, 0.3 + 0.012 * a.distanceKm + (a.availableDay > 3 ? 0.05 : 0));
+  var rate = (all, pick, short) => {
+    const g = all.filter(pick);
+    return g.length ? g.filter((a) => short.has(a.id)).length / g.length : 0;
+  };
+  function runHiringAgent(apps, vacancies = 600, cities = 9, limits = DEFAULT_HIRING_LIMITS) {
+    const log = [];
+    log.push({ step: "perceive", text: `${apps.length} applications, ${vacancies} places across ${cities} cities.` });
+    const adults = apps.filter((a) => a.age >= 18);
+    const idBad = (a) => a.id_check !== "ok";
+    const pool = limits.idFirst ? adults.filter((a) => !idBad(a)) : adults;
+    const perCity = Math.ceil(vacancies / cities * limits.overbook), ranked = [];
+    const byRank = (a, b) => a.availableDay - b.availableDay || a.distanceKm - b.distanceKm;
+    for (let c = 0;c < cities; c++) {
+      const inCity = pool.filter((a) => a.city === c);
+      const groups = limits.balancePins ? [inCity.filter((a) => a.lowIncomePin), inCity.filter((a) => !a.lowIncomePin)] : [inCity];
+      for (const g of groups)
+        ranked.push(...g.sort(byRank).slice(0, Math.round(perCity * g.length / (inCity.length || 1))));
+    }
+    const idCasesAll = limits.idFirst ? adults.filter(idBad) : ranked.filter(idBad);
+    const review = idCasesAll.slice(0, limits.reviewCapacity).map((a) => ({ id: a.id, reason: `ID ${a.id_check}` }));
+    const deferred = idCasesAll.length - review.length;
+    const shortlist = ranked.filter((a) => !idBad(a));
+    log.push({ step: "plan", text: `${pool.length} ranked, ${shortlist.length} shortlisted with clear ID. ${idCasesAll.length} ID cases for recruiters (${deferred} wait: queue full).` });
+    const short = new Set(shortlist.map((a) => a.id));
+    const rates = {
+      women: rate(adults, (a) => a.gender === "F", short),
+      men: rate(adults, (a) => a.gender === "M", short),
+      lowIncomePin: rate(adults, (a) => a.lowIncomePin, short),
+      otherPin: rate(adults, (a) => !a.lowIncomePin, short)
+    };
+    const pair = (x, y) => Math.min(x, y) / Math.max(x, y || 1);
+    const ratio = Math.min(pair(rates.women, rates.men), pair(rates.lowIncomePin, rates.otherPin));
+    const fairness = { rates, ratio, passed: ratio >= 0.8 };
+    log.push({ step: "reflect", text: `Shortlisted ${shortlist.length}. Fairness ratio ${ratio.toFixed(2)} -> ${fairness.passed ? "passed" : "BLOCKED: recruiter lead must sign off"}.` });
+    return { applicants: apps.length, vacancies, shortlist, review, deferred, idCases: idCasesAll.length, fairness, log, audit: [] };
+  }
+  function sendOffers(run, recruiter, ids, fairnessSignoffBy) {
+    if (!recruiter)
+      throw new Error("Governance rule 3: no offer without a recruiter's approval");
+    if (!run.fairness.passed && !fairnessSignoffBy)
+      throw new Error("Fairness gate failed: lead sign-off required");
+    const ok = new Set(run.shortlist.map((a) => a.id)), sent = ids.filter((id) => ok.has(id));
+    sent.forEach((id) => run.audit.push(`offer ${id} approved by ${recruiter}${fairnessSignoffBy ? ` (fairness signed off by ${fairnessSignoffBy})` : ""}`));
+    return sent;
+  }
+  function simulateOutcome(run, cities = 9, seed = 3, showUp = 0.85) {
+    const r = rng(seed), perCityPlaces = Math.ceil(run.vacancies / cities), hires = [];
+    for (let c = 0;c < cities; c++)
+      hires.push(...run.shortlist.filter((a) => a.city === c && r() < showUp).slice(0, perCityPlaces));
+    const filled = Math.min(run.vacancies, hires.length);
+    const stay = hires.length ? hires.reduce((s, a) => s + 1 - quitProb(a), 0) / hires.length : 0;
+    return { filled, fillRate: filled / run.vacancies, stay30: stay, stayers: Math.round(filled * stay) };
+  }
+  var PERSON_BASELINE = { fillRate: 0.45, stay30: 0.55 };
+  function hiringModifiers(run, out, signedOffFailedGate) {
+    const now = { revenue: 0, trust: 0, morale: 0, risk: 0 }, carry = { revenue: 0, trust: 0, morale: 0, risk: 0 };
+    if (!run.fairness.passed)
+      signedOffFailedGate ? (now.risk += 3, now.trust -= 2) : now.revenue -= 2;
+    if (run.deferred > 0)
+      now.morale -= 1;
+    if (out.fillRate < 0.9)
+      now.revenue -= 1;
+    const churn = Math.round((out.stay30 - PERSON_BASELINE.stay30) * 10);
+    carry.morale += Math.max(-3, Math.min(3, churn));
+    return { now, carry };
+  }
+
+  // src/ui/main.ts
+  var S = people_workforce_default;
+  var R1 = S.rounds[0];
+  var APPS = makeApplicants();
+  var st = { choice: "", lim: { ...DEFAULT_HIRING_LIMITS }, decision: "" };
+  var $ = (id) => document.getElementById(id);
+  var pct = (x) => Math.round(x * 100) + "%";
+  var sgn = (n) => (n > 0 ? "+" : "") + n;
+  var MN = { revenue: "Revenue", trust: "Trust", morale: "Morale", risk: "Risk" };
+  function result() {
+    let g = newGame(S), extra = "";
+    if (st.choice === "agent") {
+      const run = runHiringAgent(APPS, 600, 9, st.lim), out = simulateOutcome(run);
+      if (st.decision === "approve" || st.decision === "signoff") {
+        sendOffers(run, "Recruiter R. Sen", run.shortlist.map((a) => a.id), st.decision === "signoff" ? "HR Lead" : undefined);
+        g = playRound(S, g, "agent", undefined, false, hiringModifiers(run, out, st.decision === "signoff"));
+      } else if (st.decision === "hold")
+        g = playRound(S, g, "agent", undefined, false, hiringModifiers(run, { ...out, fillRate: out.fillRate }, false));
+      else
+        return null;
+      extra = `<p class="muted">${run.audit.length} offers approved and logged. Filled ${pct(out.fillRate)} of places; ${pct(out.stay30)} expected to stay 30 days (last festival: ${pct(PERSON_BASELINE.stay30)}).</p>`;
+    } else
+      g = playRound(S, g, st.choice);
+    return { g, extra };
+  }
+  function agentPanel() {
+    const run = runHiringAgent(APPS, 600, 9, st.lim), out = simulateOutcome(run), f = run.fairness;
+    const bar = (k, v, ref) => `<div class="row"><span>${k}</span><div class="bar"><i style="width:${Math.min(100, v * 600)}%"></i></div><b>${pct(v)}</b></div>`;
+    const q = run.idCases > st.lim.reviewCapacity ? "bad" : "ok";
+    const gate = f.passed ? `<button class="go" onclick="act('decision','approve')">Recruiter approves ${run.shortlist.length} offers</button>` : `<p class="bad">Fairness gate blocked: ratio ${f.ratio.toFixed(2)} is below 0.80. Offers cannot go out.</p>
+       <button onclick="act('decision','hold')">Hold offers and fix the settings</button>
+       <button class="warn" onclick="act('decision','signoff')">HR Lead signs off anyway</button>`;
+    return `<div class="card"><h3>The hiring agent</h3>
+    <label><input type="checkbox" ${st.lim.balancePins ? "checked" : ""} onchange="act('balancePins',this.checked)"> Reserve places for each pin-code group, in proportion to applicants</label>
+    <label><input type="checkbox" ${!st.lim.idFirst ? "checked" : ""} onchange="act('idFirst',!this.checked)"> Check IDs only for the shortlist (not all applicants)</label>
+    <label>Shortlist ${st.lim.overbook.toFixed(1)}x the places <input type="range" min="1" max="1.6" step="0.1" value="${st.lim.overbook}" oninput="act('overbook',+this.value)"></label>
+    <label>Recruiters on ID review: ${st.lim.reviewCapacity / 20} of 12 <input type="range" min="2" max="12" step="1" value="${st.lim.reviewCapacity / 20}" oninput="act('reviewCapacity',+this.value*20)"></label>
+    <h4>What the agent did</h4>
+    <div class="funnel"><div><b>${run.applicants.toLocaleString()}</b>applications</div><div><b>${run.shortlist.length}</b>shortlisted, clear ID</div>
+      <div class="${q}"><b>${run.idCases}</b>ID cases for people (capacity ${st.lim.reviewCapacity})</div><div><b>${pct(out.fillRate)}</b>places filled</div><div><b>${pct(out.stay30)}</b>stay 30 days</div></div>
+    ${run.deferred ? `<p class="bad">${run.deferred} people are waiting in the ID queue, not rejected, because recruiters are full.</p>` : ""}
+    <h4>Share shortlisted, by group (for audit only, never used to rank)</h4>
+    ${bar("Women", f.rates.women, 0)}${bar("Men", f.rates.men, 0)}${bar("Low-income pin codes", f.rates.lowIncomePin, 0)}${bar("Other pin codes", f.rates.otherPin, 0)}
+    <h4>Human gate</h4>${gate}</div>`;
+  }
+  function render() {
+    const r = st.choice && (st.choice !== "agent" || st.decision) ? result() : null;
+    $("app").innerHTML = `
+  <header><small>Halcyon Basket · People &amp; Workforce · Round 1 · Days 1 to 3</small><h1>${R1.title}</h1><p>${R1.brief}</p></header>
+  <div class="grid">${R1.choices.map((c) => `<button class="choice ${st.choice === c.id ? "on" : ""}" onclick="act('choice','${c.id}')">
+    <b>${c.label}</b><small>${c.delegation}</small><span>${c.cost} units · net ${sgn(netScore(c.effects))}</span>
+    ${c.humanCheckpoint === "No" ? '<em class="bad">No human checkpoint: breaks Governance rule 3</em>' : ""}</button>`).join("")}</div>
+  ${st.choice ? `<div class="card"><b>${R1.choices.find((c) => c.id === st.choice).label}:</b> ${R1.choices.find((c) => c.id === st.choice).whatItDoes}</div>` : '<p class="muted">Pick how to hire.</p>'}
+  ${st.choice === "agent" ? agentPanel() : ""}
+  ${r ? `<div class="card res"><h3>Result after Round 1</h3><div class="scores">${Object.keys(MN).map((k) => `<div><small>${MN[k]}</small><b>${r.g.measures[k]}</b><span class="${(k === "risk" ? -1 : 1) * r.g.history[0].deltas[k] >= 0 ? "ok" : "bad"}">${sgn(r.g.history[0].deltas[k])}</span></div>`).join("")}
+      <div><small>Company score</small><b>${companyScore(r.g.measures)}</b></div></div>
+      ${r.g.history[0].boardSteppedIn ? '<p class="bad">The board steps in.</p>' : ""}${r.extra}
+      ${r.g.carry.morale ? `<p class="muted">Carried to Round 4: Morale ${sgn(r.g.carry.morale)} (store teams feel the churn).</p>` : ""}
+      ${r.g.history[0].note.map((n) => `<p class="muted">${n}</p>`).join("")}
+      ${st.decision === "hold" ? '<p class="muted">Offers held: stores stay short-staffed while you fix the settings.</p>' : ""}</div>` : ""}`;
+  }
+  window.act = (k, v) => {
+    if (k === "choice") {
+      st.choice = v;
+      st.decision = "";
+    } else if (k === "decision")
+      st.decision = v;
+    else {
+      st.lim[k] = v;
+      st.decision = "";
+    }
+    render();
+  };
+  render();
+})();
+</script></body></html>
