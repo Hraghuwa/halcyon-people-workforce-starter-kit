@@ -13,6 +13,7 @@ This folder holds the tested core of our simulation. The build guide (Word docum
 | `src/engine/shiftFillAgent.ts` | The Shift-Fill Agent (Round 2): Perceive, Plan, Act, Reflect on synthetic staff |
 | `src/engine/hiringAgent.ts` | Round 1 hiring agent with three human gates (ID review, fairness sign-off, recruiter approval) |
 | `simulator.html` | Playable Round 1 simulator, Recruiter and Candidate sides (built from `src/ui/`) |
+| `src/ui/candgame.ts` | The Candidate's Week: the candidate-side game |
 | `src/ui/map.ts` | Hiring Map: where the agent's shortlist falls around a city hub, with fairness-by-distance and what-if rules |
 | `src/ui/sim.test.ts` | Tests for the game logic behind the screen (run with `bun`) |
 | `src/engine/hiringAgent.test.ts` | Tests for the hiring gates |
@@ -24,7 +25,7 @@ Play Round 1: open `simulator.html` in a browser (rebuild with `bun scripts/buil
 
 Each role opens with a scroll-driven briefing (skippable, replayable from Help): words resolve as you scroll and the numbers count up. The interface uses Poppins and a liquid-glass look, with objectives, relationship changes and a 3-star board review to give each play a goal.
 
-There are two logins, with no password. **Recruiter** creates and publishes the scenario, then plays three days (choose an approach, clear the human gates, approve offers) and gets a debrief and leaderboard. **Candidate** applies (or plays a persona), chats with the screening assistant, sees why they were or were not shortlisted, and can challenge a rejection. Open the page in two tabs of the same browser to play both sides at once; data is stored in that browser only.
+There are two logins, with no password. **Recruiter** creates and publishes the scenario, then plays three days (choose an approach, clear the human gates, approve offers) and gets a debrief and leaderboard. **Candidate** plays "The Candidate's Week": rent is due and they need a joining letter by Day 4. They manage Savings, Energy, Hope and Faith in the system, make choices that change their real application (fix an ID, pick a start day), see a ring map of where they stand against the shortlist, and can challenge a rejection. Open the page in two tabs of the same browser to play both sides at once; data is stored in that browser only. Serve the folder (`python3 -m http.server 8791`) and open `http://127.0.0.1:8791/simulator.html#recruiter` and `...#candidate`; the part after `#` picks the login.
 
 Check it works (Node.js 22.6 or newer):
 

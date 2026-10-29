@@ -20,7 +20,13 @@ export interface Cand {
   id: string; name: string; city: number; gender: "F" | "M"; lowIncomePin: boolean; age: number; gapMonths: number;
   distanceKm: number; availableDay: number; id_check: Applicant["id_check"]; story: string; appliedAt: number;
   challenge?: { text: string; resolution?: "reinstated" | "upheld" | "ignored" };
+  week?: Week;
 }
+// The candidate's own stakes: rent is due, so they need a joining letter by Day 4.
+export interface CM { savings: number; energy: number; hope: number; faith: number }
+export const START_CM: CM = { savings: 40, energy: 70, hope: 60, faith: 55 };
+export interface Week { day: 1 | 2 | 3 | 4; m: CM; picks: Record<string, string>; q1: "id" | "gap" | ""; why: boolean; res: boolean }
+export const newWeek = (c: Pick<Cand, "id_check" | "gapMonths">): Week => ({ day: 1, m: { ...START_CM }, picks: {}, q1: c.id_check !== "ok" ? "id" : c.gapMonths >= 6 ? "gap" : "", why: false, res: false });
 export const PERSONAS: Omit<Cand, "id" | "appliedAt">[] = [
   { name: "Priya Nair", city: 1, gender: "F", lowIncomePin: false, age: 29, gapMonths: 14, distanceKm: 6, availableDay: 2, id_check: "ok", story: "Back after a 14-month career break to care for family. Fast and careful, and wants steady shifts." },
   { name: "Imran Qureshi", city: 2, gender: "M", lowIncomePin: true, age: 24, gapMonths: 2, distanceKm: 24, availableDay: 1, id_check: "mismatch", story: "Delivery rider living far from the store. His ID says Mohd, his application says Mohammad." },
@@ -35,7 +41,7 @@ export interface Play {
 export const newPlay = (sc: ScenarioCfg): Play => ({ day: 1, step: 0, choice: "", decision: "", confirm: false, saved: false, started: Date.now(), log: [],
   lim: { ...DEFAULT_HIRING_LIMITS, reviewCapacity: Math.min(12, sc.recruiters) * 20 } });
 
-export interface LastRun { stage: "screened" | "offers" | "held"; shortlist: string[]; review: string[]; reasons: Record<string, string>; at: number; vacancies: number }
+export interface LastRun { stage: "screened" | "offers" | "held"; shortlist: string[]; review: string[]; reasons: Record<string, string>; cuts?: Record<string, { day: number; km: number; n: number }>; at: number; vacancies: number }
 export interface RunRec { id: string; name: string; score: number; fairness: number; fill: number; stay: number; choice: string; badges: string[]; at: number; sample?: boolean }
 
 // ---------- cases: first-person role-play moments ----------
@@ -73,7 +79,7 @@ export function buildPool(sc: ScenarioCfg, cands: Cand[]) {
 
 const runCache = new Map<string, { run: HiringRun; out: ReturnType<typeof simulateOutcome> }>();
 export function evalRun(sc: ScenarioCfg, cands: Cand[], lim: HiringLimits) {
-  const k = JSON.stringify([sc.applications, sc.cities, sc.vacancies, cands.map(c => [c.id, c.availableDay, c.city, c.distanceKm]), lim]);
+  const k = JSON.stringify([sc.applications, sc.cities, sc.vacancies, cands.map(c => [c.id, c.availableDay, c.city, c.distanceKm, c.id_check]), lim]);
   let v = runCache.get(k);
   if (!v) { const run = runHiringAgent(buildPool(sc, cands).pool, sc.vacancies, sc.cities, lim); v = { run, out: simulateOutcome(run, sc.cities) }; runCache.set(k, v); if (runCache.size > 60) runCache.clear(); }
   return v;
@@ -82,15 +88,16 @@ export function evalRun(sc: ScenarioCfg, cands: Cand[], lim: HiringLimits) {
 // Plain-language reason a real candidate was or was not shortlisted (the candidate sees this).
 export function lastRunFor(sc: ScenarioCfg, cands: Cand[], lim: HiringLimits, stage: LastRun["stage"]): LastRun {
   const { run } = evalRun(sc, cands, lim), { realMap } = buildPool(sc, cands);
-  const sl = new Set(run.shortlist.map(a => a.id)), rv = new Set(run.review.map(r => r.id)), reasons: Record<string, string> = {};
+  const sl = new Set(run.shortlist.map(a => a.id)), rv = new Set(run.review.map(r => r.id)), reasons: Record<string, string> = {}, cuts: NonNullable<LastRun["cuts"]> = {};
   realMap.forEach((c, id) => {
-    if (sl.has(id) || rv.has(id)) return;
     const mates = run.shortlist.filter(a => a.city === c.city && (!lim.balancePins || a.lowIncomePin === c.lowIncomePin));
     const day = mates.length ? Math.max(...mates.map(a => a.availableDay)) : 0, km = mates.length ? Math.max(...mates.map(a => a.distanceKm)) : 0;
+    cuts[c.id] = { day, km, n: mates.length };
+    if (sl.has(id) || rv.has(id)) return;
     reasons[c.id] = `In ${CITIES[c.city]} the agent shortlisted ${mates.length} people in your group. They could start by Day ${day} and lived within ${km} km. You could start on Day ${c.availableDay} and live ${c.distanceKm} km away. Nobody rejected you for a work gap.`;
   });
   const idOf = (ids: Set<number>) => [...ids].map(i => realMap.get(i)?.id).filter((x): x is string => !!x);
-  return { stage, shortlist: idOf(sl), review: idOf(rv), reasons, at: Date.now(), vacancies: sc.vacancies };
+  return { stage, shortlist: idOf(sl), review: idOf(rv), reasons, cuts, at: Date.now(), vacancies: sc.vacancies };
 }
 
 export function funnel(p: Play, sc: ScenarioCfg, cands: Cand[]) {

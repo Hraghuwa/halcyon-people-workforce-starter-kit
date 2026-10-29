@@ -1,6 +1,6 @@
 // Run with bun (the UI modules import JSON directly): bun src/ui/sim.test.ts
 import assert from "node:assert/strict";
-import { DEFAULT_SCENARIO, newPlay, result, lastRunFor, PERSONAS, type Cand } from "./sim.ts";
+import { DEFAULT_SCENARIO, newPlay, newWeek, START_CM, result, lastRunFor, PERSONAS, type Cand } from "./sim.ts";
 
 const sc = { ...DEFAULT_SCENARIO, published: true, crisis: false };
 const play = (o: object) => ({ ...newPlay(sc), ...o });
@@ -19,4 +19,8 @@ assert.ok(!result(play({ choice: "agentic" }), sc, []).badges.includes("Fully St
 const c: Cand = { ...PERSONAS[1], id: "c1", appliedAt: 1 };
 const last = lastRunFor(sc, [c], newPlay(sc).lim, "screened");
 assert.ok(last.reasons.c1?.includes("Nobody rejected you for a work gap") || last.shortlist.includes("c1") || last.review.includes("c1"));
+// The candidate game: the first question depends on the file, and every candidate gets the shortlist cutoff to compare against.
+assert.equal(newWeek({ id_check: "mismatch", gapMonths: 0 }).q1, "id"); assert.equal(newWeek({ id_check: "ok", gapMonths: 14 }).q1, "gap"); assert.equal(newWeek({ id_check: "ok", gapMonths: 1 }).q1, "");
+assert.deepEqual(newWeek({ id_check: "ok", gapMonths: 0 }).m, START_CM);
+assert.ok(last.cuts?.c1 && last.cuts.c1.km > 0, "cutoff recorded for every real candidate");
 console.log("UI game-logic tests passed.");

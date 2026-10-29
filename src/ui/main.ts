@@ -3,7 +3,8 @@ import { db, save, signIn, signOut, me, onRemoteChange, reset } from "./store.ts
 import { ui, esc, ic, avatar, meterRow, setRender, toast } from "./ui.ts";
 import { START, result } from "./sim.ts";
 import { overview, scenarioView, decide, agentDemo, impact, leaderboard, help, ract, playOf } from "./recruiter.ts";
-import { journey, roles, chat, cHelp, cact, mine } from "./candidate.ts";
+import { journey, roles, cHelp, cact, mine } from "./candidate.ts";
+import { weekView, gact } from "./candgame.ts";
 import { mapView, drawMap, mact } from "./map.ts";
 
 declare const Chart: any;
@@ -12,8 +13,8 @@ let bump = false;
 let charts: any[] = [];
 
 const RNAV: [string, string, string][] = [["overview", "home", "Overview"], ["scenario", "scenario", "Scenario"], ["decide", "decide", "Make a Decision"], ["agent", "agent", "AI Agent Demo"], ["map", "map", "Hiring Map"], ["impact", "impact", "Your Impact"], ["leaderboard", "trophy", "Leaderboard"], ["help", "help", "Help"]];
-const CNAV: [string, string, string][] = [["journey", "home", "My Journey"], ["roles", "scenario", "Open Roles"], ["chat", "chat", "Interview Chat"], ["help", "help", "Help"]];
-const TITLES: Record<string, string> = { overview: "Hiring command centre", scenario: "Scenario", decide: "The Hiring Floor", agent: "AI Agent Demo", map: "Hiring Map", impact: "Your Impact", leaderboard: "Leaderboard", help: "Help", journey: "My Journey", roles: "Open Roles", chat: "Interview Chat" };
+const CNAV: [string, string, string][] = [["week", "decide", "My Week"], ["roles", "scenario", "Open Roles"], ["journey", "home", "My Journey"], ["help", "help", "Help"]];
+const TITLES: Record<string, string> = { overview: "Hiring command centre", scenario: "Scenario", decide: "The Hiring Floor", agent: "AI Agent Demo", map: "Hiring Map", impact: "Your Impact", leaderboard: "Leaderboard", help: "Help", week: "My Week", journey: "My Journey", roles: "Open Roles" };
 
 const cartArt = `<svg viewBox="0 0 120 90" class="cart" aria-hidden="true"><rect x="62" y="30" width="30" height="26" rx="3" fill="#c99556"/><rect x="74" y="30" width="6" height="26" fill="#e8c78d" opacity=".8"/><rect x="44" y="40" width="26" height="20" rx="3" fill="#b68446"/>
   <path d="M10 18h14l10 40h50l8-28H30" fill="none" stroke="#9b7cf6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="42" cy="72" r="6" fill="#9b7cf6"/><circle cx="78" cy="72" r="6" fill="#9b7cf6"/></svg>`;
@@ -49,7 +50,7 @@ function app(p: Prof) {
   ui.charts = [];
   const v = ui.view;
   const body = p.role === "recruiter" ? (({ overview, scenario: scenarioView, decide, agent: agentDemo, map: mapView, impact, leaderboard, help } as Record<string, () => string>)[v] ?? overview)()
-    : (({ journey, roles, chat, help: cHelp } as Record<string, () => string>)[v] ?? roles)();
+    : (({ week: weekView, journey, roles, help: cHelp } as Record<string, () => string>)[v] ?? roles)();
   const imm = body.startsWith('<section class="story"');
   if (imm) return `${topbar(p)}<div class="shell imm"><main id="main" tabindex="-1">${body}</main></div>`;
   let meters = "";
@@ -109,7 +110,7 @@ addEventListener("scroll", storyTick, { passive: true });
 function paint() {
   const root = document.getElementById("app")!, fk = (document.activeElement as HTMLElement | null)?.dataset?.k, nm = (document.getElementById("nm") as HTMLInputElement | null)?.value;
   const p = me();
-  if (p && !ui.view) ui.view = p.role === "recruiter" ? "overview" : mine() ? "journey" : "roles";
+  if (p && !ui.view) ui.view = p.role === "recruiter" ? "overview" : mine() ? "week" : "roles";
   root.innerHTML = (p ? app(p) : login()) + (ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : "");
   if (!p && nm) (document.getElementById("nm") as HTMLInputElement).value = nm;
   document.title = p ? `${TITLES[ui.view] ?? "Halcyon"} · Halcyon People & Workforce` : "Halcyon People & Workforce Simulator";
@@ -125,11 +126,11 @@ setRender(paint);
   if (a === "role") { role = r[0]; paint(); return; }
   if (a === "login") { const p = signIn(role, (document.getElementById("nm") as HTMLInputElement)?.value ?? ""); ui.view = ""; paint(); toast("Welcome, " + p.name); return; }
   if (a === "logout") { signOut(); ui.view = ""; paint(); return; }
-  if (a === "brief") { const p = me(); if (p) { p.briefed = true; save(); } ui.view = p?.role === "candidate" ? "roles" : "decide"; paint(); window.scrollTo({ top: 0 }); return; }
+  if (a === "brief") { const p = me(); if (p) { p.briefed = true; save(); } ui.view = p?.role === "candidate" ? (mine() ? "week" : "roles") : "decide"; paint(); window.scrollTo({ top: 0 }); return; }
   if (a === "rebrief") { const p = me(); if (p) { p.briefed = false; save(); } ui.view = p?.role === "candidate" ? "roles" : "decide"; paint(); window.scrollTo({ top: 0 }); return; }
   if (a === "wipe") { if (confirm("Erase all scenarios, candidates and scores on this browser?")) { reset(); signOut(); ui.view = ""; paint(); } return; }
   if (["case", "decision", "run", "day", "finish"].includes(a)) bump = true;
-  if (ract(a, ...r) || mact(a, ...r) || cact(a, ...r)) return;
+  if (ract(a, ...r) || mact(a, ...r) || cact(a, ...r) || gact(a, ...r)) return;
 };
 onRemoteChange(paint);
 addEventListener("hashchange", () => { role = location.hash === "#candidate" ? "candidate" : "recruiter"; if (!me()) paint(); });
