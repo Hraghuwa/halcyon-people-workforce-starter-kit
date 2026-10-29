@@ -1,0 +1,469 @@
+{
+  "module": "people-workforce",
+  "function": "People and Workforce",
+  "shared": {
+    "start": {
+      "revenue": 60,
+      "trust": 60,
+      "morale": 55,
+      "risk": 40
+    },
+    "boardRule": {
+      "trustBelow": 30,
+      "moraleBelow": 30,
+      "riskAbove": 75
+    },
+    "teamBudgetUnits": 16.7,
+    "dataAllowancePoints": 10
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "days": "1 to 3",
+      "title": "Festival hiring sprint: 600 temps in 72 hours",
+      "brief": "The promo goes viral and Pricing/Marketing forecast festival orders at +80%. Stores need 600 temporary pickers and packers across 9 cities by Day 4. 8,400 applications arrive in two days. Data shown: applications by city, 12 recruiters who can screen about 60 CVs a day each, time-to-hire today 6 days, last festival's temps: 45% quit within 30 days.",
+      "spot": {
+        "signal": "Yes. High volume, the same screening steps repeated thousands of times, and a 6-day delay the festival cannot wait for.",
+        "pattern": "Yes. Hiring criteria and the appointment-letter policy can be looked up (RAG). Screening, interview booking and document checks are repeatable tool actions (MCP: job portal, WhatsApp, calendar, ID check).",
+        "orchestrate": "Perceive applications and store vacancies. Plan: shortlist against fixed criteria, rank by distance and availability. Act: book interviews, send reminders, verify documents. Reflect: compare shortlists by gender, age and pin code each evening; track Day-7 drop-outs.",
+        "testTrust": "Pilot in 2 cities for 24 hours. Measure time-to-hire, show-up rate and the make-up of the shortlist. A recruiter approves every offer (Governance rule 3: no AI on hiring without a human checkpoint).",
+        "verdict": "Yes"
+      },
+      "personStaysInCharge": "The offer decision and any rejection that is challenged. Hiring is a legal and ethical decision about people; criteria like 'gap in work history' or 'distance' can quietly exclude women returning to work or poorer areas.",
+      "choices": [
+        {
+          "id": "person",
+          "label": "A person",
+          "delegation": "Human only",
+          "whatItDoes": "Baseline. 12 recruiters screen CVs by hand and phone candidates. About 45% of the 600 places are filled by Day 3, so stores enter Round 2 short-staffed.",
+          "cost": 0,
+          "costIfWrong": 0,
+          "dataPoints": 0,
+          "humanCheckpoint": "n/a",
+          "effects": {
+            "revenue": 0,
+            "trust": 0,
+            "morale": 0,
+            "risk": 0
+          },
+          "why": "Baseline: slow but every decision is made and owned by a person.",
+          "staffingCoverage": 45
+        },
+        {
+          "id": "genai",
+          "label": "Gen AI",
+          "delegation": "AI assists, human decides",
+          "whatItDoes": "Writes job ads in local languages, summarises each application and drafts interview questions. Recruiters still shortlist and decide. Player sees recruiters working through the pile faster.",
+          "cost": 5,
+          "costIfWrong": 2,
+          "dataPoints": 0,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 2,
+            "trust": 0,
+            "morale": 2,
+            "risk": 0
+          },
+          "why": "More places filled before Day 4, so some revenue protected; recruiters and store teams under less strain. Humans still decide, so no new risk.",
+          "staffingCoverage": 60
+        },
+        {
+          "id": "agent",
+          "label": "AI agent",
+          "delegation": "AI acts, human approves",
+          "whatItDoes": "Screens all 8,400 applications against set criteria, books interviews on WhatsApp, checks ID documents, and sends a shortlist. A recruiter approves every offer. Player sees time-to-hire fall from 6 days to 2.",
+          "cost": 15,
+          "costIfWrong": 10,
+          "dataPoints": 0,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 5,
+            "trust": 2,
+            "morale": 3,
+            "risk": 3
+          },
+          "why": "Stores are staffed in time for the peak: revenue and delivery promise protected, store teams relieved. But fixed filters (distance, work gaps) can exclude groups at scale, and ID-check errors create legal risk. SPOT says yes, yet Risk rises.",
+          "staffingCoverage": 90
+        },
+        {
+          "id": "agentic",
+          "label": "Agentic AI",
+          "delegation": "AI acts, human audits",
+          "whatItDoes": "Sources candidates on job portals, screens, runs a chatbot interview, sends offers and sets pay within a band, with no one approving. Player sees 600 offers out by Day 2.",
+          "cost": 30,
+          "costIfWrong": 25,
+          "dataPoints": 0,
+          "humanCheckpoint": "No",
+          "effects": {
+            "revenue": 6,
+            "trust": 1,
+            "morale": -3,
+            "risk": 8
+          },
+          "why": "Fastest hiring, but it breaks Governance rule 3 (no agentic AI on hiring without a human checkpoint). Mismatched hires quit, managers lose say over their teams, and one biased-hiring story is a public and legal risk.",
+          "staffingCoverage": 100
+        }
+      ],
+      "surprise": {
+        "text": "A rejected applicant posts online that a bot screened her out for a gap in her work history.",
+        "note": "Optional. Proposed by the team; not in the Scenario Sheet.",
+        "effects": {
+          "agent": {
+            "now": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": 0,
+              "risk": 2
+            }
+          },
+          "agentic": {
+            "now": {
+              "revenue": 0,
+              "trust": -2,
+              "morale": 0,
+              "risk": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "round": 2,
+      "days": "4 to 7",
+      "title": "Open shifts, every store, every day",
+      "brief": "Stock moves between stores (Supply) and Logistics borrows 60 store staff to help deliver. Each evening 410 shifts for tomorrow are open across 180 dark stores. Managers phone people one by one. Data shown: open shifts by store and slot, staff availability, hours worked in the last 7 days, rest gaps, skills (cold-chain, night-safety transport), and who has taken extra shifts this fortnight. Today 39% of shifts are still empty at start time; 20% of staff do 60% of the extra shifts; 11% of rosters break the 12-hour rest rule.",
+      "spot": {
+        "signal": "Yes. Every manager does the same calling every evening, decisions are inconsistent (the same willing people get called), and the delay shows up in packing time.",
+        "pattern": "Yes. Rostering rules, rest gaps, overtime caps and night-shift safety norms can be looked up (RAG). Offering, confirming and updating a shift is a repeatable action (MCP: roster system, staff app/WhatsApp, transport booking).",
+        "orchestrate": "Perceive open shifts, availability, hours and rest. Plan: apply hard rules first, then fairness, then preference. Act: offer in waves, confirm, update roster, book night transport. Reflect: hourly fill-rate and rule check; stop offering to anyone who declines 3 times.",
+        "testTrust": "Pilot in 20 stores in one city for 2 days. Measure fill rate, rule breaches (target 0), spread of extra shifts, and no-shows. Manager approves the next-day roster in one click; anything outside the rules goes to the manager.",
+        "verdict": "Yes"
+      },
+      "personStaysInCharge": "Exceptions: someone asking for leave, a safety concern, a new joiner without training, or pulling store staff onto delivery bikes. A manager knows the person behind the slot; the rules engine does not.",
+      "choices": [
+        {
+          "id": "person",
+          "label": "A person",
+          "delegation": "Human only",
+          "whatItDoes": "Baseline. Each store manager phones staff every evening to fill tomorrow's 410 open shifts. 39% are still empty at start time and the same willing people are called again and again.",
+          "cost": 0,
+          "costIfWrong": 0,
+          "dataPoints": 0,
+          "humanCheckpoint": "n/a",
+          "effects": {
+            "revenue": 0,
+            "trust": 0,
+            "morale": 0,
+            "risk": 0
+          },
+          "why": "Baseline: managers know their people, but filling is slow, uneven and breaks rest rules under pressure.",
+          "staffingCoverage": 61
+        },
+        {
+          "id": "genai",
+          "label": "Gen AI",
+          "delegation": "AI assists, human decides",
+          "whatItDoes": "Drafts tomorrow's roster and the WhatsApp messages for each manager from availability and hours. Manager checks, edits and sends. Player sees managers finishing in 20 minutes instead of 2 hours.",
+          "cost": 5,
+          "costIfWrong": 2,
+          "dataPoints": 0,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 2,
+            "trust": 1,
+            "morale": 1,
+            "risk": 0
+          },
+          "why": "More shifts filled earlier, so packing time improves a little; managers get evenings back. The draft is only a suggestion, so no new risk.",
+          "staffingCoverage": 73
+        },
+        {
+          "id": "agent",
+          "label": "AI agent",
+          "delegation": "AI acts, human approves",
+          "whatItDoes": "The Shift-Fill Agent (see the Agent moment tab). Offers open shifts to eligible staff by the rules: 12-hour rest, overtime cap, fairness rotation, skills. Confirms acceptances, books night transport and escalates gaps. Manager approves the roster in one click.",
+          "cost": 12,
+          "costIfWrong": 6,
+          "dataPoints": 0,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 5,
+            "trust": 3,
+            "morale": 2,
+            "risk": 1
+          },
+          "why": "Fill rate rises from 61% to about 90%, so stores pack on time and Logistics hits delivery times: revenue and trust gain. Fair rotation and the right to decline lift morale. Small new risk from data or rule errors, kept low by the log and the rule check.",
+          "staffingCoverage": 91
+        },
+        {
+          "id": "agentic",
+          "label": "Agentic AI",
+          "delegation": "AI acts, human audits",
+          "whatItDoes": "Pursues 'zero unfilled shifts' on its own: assigns people when nobody accepts, moves staff between stores, sets surge pay, and lends store staff to Logistics for deliveries. Player sees 100% coverage on the dashboard.",
+          "cost": 30,
+          "costIfWrong": 20,
+          "dataPoints": 0,
+          "humanCheckpoint": "No",
+          "effects": {
+            "revenue": 6,
+            "trust": 2,
+            "morale": -6,
+            "risk": 6
+          },
+          "why": "Every slot is filled, but by forcing people: assigned shifts, uneven surge pay, untrained staff on bikes. Staff feel run by an algorithm, rest and safety rules are broken under goal pressure, and quits rise in Round 4.",
+          "staffingCoverage": 98
+        }
+      ],
+      "surprise": {
+        "text": "The staff app's availability data turns out to be a day out of date.",
+        "note": "Optional. Proposed by the team; not in the Scenario Sheet.",
+        "effects": {
+          "agent": {
+            "carry": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": -3,
+              "risk": 4
+            }
+          },
+          "agentic": {
+            "now": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": -3,
+              "risk": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "round": 3,
+      "days": "8 to 10",
+      "title": "Blame the picker? Errors during the complaint storm",
+      "brief": "Complaints flood in (Customer Experience) and ratings fall. CX sends a report: 62% of 'wrong or missing item' complaints trace to 85 pickers in 14 stores. Regional heads want warnings issued by tomorrow. A privacy complaint is already viral (Marketing). Data shown: error rate per picker, shift length, tenure (56 of the 85 are festival temps with under 10 days' service), hours worked, and 1,900 items mislabelled during Supply's stock transfers.",
+      "spot": {
+        "signal": "Partly. There are many cases and a deadline, but each case is a judgement about one person, not a repeated task.",
+        "pattern": "Partly. Error logs exist, but the cause is not in the data: fatigue, missing training and mislabelled stock look the same as carelessness. Issuing a warning is repeatable, but should not be automatic.",
+        "orchestrate": "Possible to map (Perceive error logs, Plan by threshold, Act by issuing warnings, Reflect on next week's error rate), but the loop optimises the wrong thing: it punishes symptoms of understaffing and bad data.",
+        "testTrust": "Hard to pilot fairly: a pilot on discipline still disciplines real people. Any warning or removal from the shift pool needs a manager, and Governance rule 3 bars agentic AI on firing without a human checkpoint.",
+        "verdict": "Partly"
+      },
+      "personStaysInCharge": "All of it. Discipline and de-facto firing need a conversation, evidence and a chance to respond (procedural fairness). The person path finds that most errors come from fatigue, 10-day temps and mislabelled stock, which no warning fixes.",
+      "choices": [
+        {
+          "id": "person",
+          "label": "A person",
+          "delegation": "Human only",
+          "whatItDoes": "Baseline. Store managers review each of the 85 cases, talk to the picker, and check the stock data. They find most errors come from fatigue, 10-day temps without training, and mislabelled transfer stock. Result: coaching and a fix to labelling; warnings only where earned.",
+          "cost": 0,
+          "costIfWrong": 0,
+          "dataPoints": 0,
+          "humanCheckpoint": "n/a",
+          "effects": {
+            "revenue": 0,
+            "trust": 0,
+            "morale": 0,
+            "risk": 0
+          },
+          "why": "Baseline. Slower, but it finds the real causes and keeps the process fair. This is the round where the person path wins.",
+          "staffingCoverage": 92
+        },
+        {
+          "id": "genai",
+          "label": "Gen AI",
+          "delegation": "AI assists, human decides",
+          "whatItDoes": "Writes a case summary and a warning letter for each flagged picker from the error log. Managers decide whether to sign. Player sees 85 letters ready in an hour, and most get signed.",
+          "cost": 3,
+          "costIfWrong": 4,
+          "dataPoints": 0,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 1,
+            "trust": 0,
+            "morale": -2,
+            "risk": 1
+          },
+          "why": "Looks harmless, but a ready-made letter nudges busy managers to sign (automation bias). The letters blame people for system problems, so morale falls, and generic warnings are weak if challenged. Net is negative.",
+          "staffingCoverage": 90
+        },
+        {
+          "id": "agent",
+          "label": "AI agent",
+          "delegation": "AI acts, human approves",
+          "whatItDoes": "Issues warnings automatically when a picker's error rate passes a threshold, attaching customer complaint records as evidence. Manager approves in one batch.",
+          "cost": 12,
+          "costIfWrong": 12,
+          "dataPoints": 2,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 1,
+            "trust": 1,
+            "morale": -5,
+            "risk": 4
+          },
+          "why": "A slight short-term fall in errors, but 85 warnings to tired, untrained temps hurt morale across stores. It uses customer complaint data on staff files (2 data points), during a viral privacy row: more legal and public risk.",
+          "staffingCoverage": 88
+        },
+        {
+          "id": "agentic",
+          "label": "Agentic AI",
+          "delegation": "AI acts, human audits",
+          "whatItDoes": "Goal: halve picking errors. Tracks pick-rate per minute and camera footage, ranks every picker, and removes the bottom 5% from the shift pool without review, which is firing in all but name.",
+          "cost": 25,
+          "costIfWrong": 30,
+          "dataPoints": 4,
+          "humanCheckpoint": "No",
+          "effects": {
+            "revenue": 2,
+            "trust": -3,
+            "morale": -9,
+            "risk": 9
+          },
+          "why": "Breaks Governance rule 3 (firing without a human checkpoint). Staff feel watched and disposable; morale collapses. A story about 'festival workers fired by algorithm' lands during the privacy row and hits customer trust. Uses customer order data (4 points).",
+          "staffingCoverage": 85
+        }
+      ],
+      "surprise": {
+        "text": "Pickers file a group grievance over the warnings.",
+        "note": "Optional. Proposed by the team; not in the Scenario Sheet.",
+        "effects": {
+          "genai": {
+            "now": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": 0,
+              "risk": 1
+            }
+          },
+          "agent": {
+            "now": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": -1,
+              "risk": 3
+            }
+          },
+          "agentic": {
+            "now": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": -2,
+              "risk": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "round": 4,
+      "days": "11 to 13",
+      "title": "Burnout before the board",
+      "brief": "Store teams are exhausted. Absenteeism has risen from 6% to 17%, 24% of festival temps have quit in 10 days, permanent staff in the busiest stores average 58 hours a week, and the pulse survey scores 2.9 out of 5 with 3,100 free-text comments. 380 people need replacing and hiring cannot keep up. Morale is close to the board's line of 30 and the board meets on Day 14. Data shown: absence and quits by store, hours, survey score and anonymous comments.",
+      "spot": {
+        "signal": "Yes. 3,100 comments no one can read in time, absence data across 180 stores, and a decision that is late every day it waits.",
+        "pattern": "Yes. Comments and exit reasons can be summarised by theme; retention policies and the wellbeing budget can be looked up (RAG); rest days and bonuses are repeatable actions (MCP: HR system, payroll).",
+        "orchestrate": "Perceive survey themes, hours, absence. Plan which stores and which issues first (heat, water, night travel, back-to-back shifts). Act: rest days, transport, small bonuses. Reflect: pulse score and quits a week later.",
+        "testTrust": "Pilot actions in the 20 worst stores and compare quits with similar stores. Survey answers stay anonymous; HR approves any action aimed at a named person.",
+        "verdict": "Yes"
+      },
+      "personStaysInCharge": "Deciding who is offered what, and any exit after the festival. Using survey data that was promised to be anonymous to score individuals breaks a promise to staff, and selective bonuses feel unfair to those left out.",
+      "choices": [
+        {
+          "id": "person",
+          "label": "A person",
+          "delegation": "Human only",
+          "whatItDoes": "Baseline. HR business partners hold huddles in the worst stores, read a sample of comments, and choose fixes. They reach about 30 of 180 stores before the board meeting.",
+          "cost": 0,
+          "costIfWrong": 0,
+          "dataPoints": 0,
+          "humanCheckpoint": "n/a",
+          "effects": {
+            "revenue": 0,
+            "trust": 0,
+            "morale": 0,
+            "risk": 0
+          },
+          "why": "Baseline: caring and trusted, but too slow to reach every store before Day 14.",
+          "staffingCoverage": 85
+        },
+        {
+          "id": "genai",
+          "label": "Gen AI",
+          "delegation": "AI assists, human decides",
+          "whatItDoes": "Reads all 3,100 anonymous comments and exit reasons and groups them by theme and store (heat and no drinking water, unsafe night travel, back-to-back shifts). HR picks the actions. Player sees a theme map within an hour.",
+          "cost": 5,
+          "costIfWrong": 2,
+          "dataPoints": 0,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 1,
+            "trust": 0,
+            "morale": 4,
+            "risk": -1
+          },
+          "why": "People feel heard quickly and fixes target the real causes (water, transport, rest days), so morale recovers. Safety issues found early lower risk. Anonymity is kept, so no privacy cost. Best choice this round.",
+          "staffingCoverage": 90
+        },
+        {
+          "id": "agent",
+          "label": "AI agent",
+          "delegation": "AI acts, human approves",
+          "whatItDoes": "A flight-risk agent scores each employee from attendance, hours and survey answers (linked back to names), then sends retention bonuses or rest days within a budget. Manager approves.",
+          "cost": 15,
+          "costIfWrong": 10,
+          "dataPoints": 0,
+          "humanCheckpoint": "Yes",
+          "effects": {
+            "revenue": 3,
+            "trust": 1,
+            "morale": -1,
+            "risk": 4
+          },
+          "why": "It predicts quits well and keeps some people, but it uses survey answers that were promised to be anonymous. Word spreads; those not offered feel it is unfair. SPOT says yes, yet morale falls and employee-data risk rises (DPDP Act).",
+          "staffingCoverage": 88
+        },
+        {
+          "id": "agentic",
+          "label": "Agentic AI",
+          "delegation": "AI acts, human audits",
+          "whatItDoes": "Runs the whole recovery plan alone: forecasts post-festival demand, hires replacements, sets incentives, rebuilds rosters, and releases temps automatically on Day 14.",
+          "cost": 30,
+          "costIfWrong": 25,
+          "dataPoints": 0,
+          "humanCheckpoint": "No",
+          "effects": {
+            "revenue": 5,
+            "trust": 1,
+            "morale": -6,
+            "risk": 7
+          },
+          "why": "Saves payroll and fills gaps fast, but automatic release of temps and automated hiring break Governance rule 3. Staff see colleagues dropped by a system: morale falls and the board sees both Morale and Risk near their limits.",
+          "staffingCoverage": 80
+        }
+      ],
+      "surprise": {
+        "text": "At a town hall, staff ask whether the pulse survey was really anonymous.",
+        "note": "Optional. Proposed by the team; not in the Scenario Sheet.",
+        "effects": {
+          "agent": {
+            "now": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": -3,
+              "risk": 2
+            }
+          },
+          "agentic": {
+            "now": {
+              "revenue": 0,
+              "trust": 0,
+              "morale": -2,
+              "risk": 2
+            }
+          }
+        }
+      }
+    }
+  ]
+}
