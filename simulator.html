@@ -1912,7 +1912,7 @@ h1,h2{font-weight:700;letter-spacing:-.03em}.pagehead h1{font-size:30px}
   }
 
   // src/ui/main.ts
-  var role = "recruiter";
+  var role = location.hash === "#candidate" ? "candidate" : "recruiter";
   var bump = false;
   var charts = [];
   var RNAV = [["overview", "home", "Overview"], ["scenario", "scenario", "Scenario"], ["decide", "decide", "Make a Decision"], ["agent", "agent", "AI Agent Demo"], ["map", "map", "Hiring Map"], ["impact", "impact", "Your Impact"], ["leaderboard", "trophy", "Leaderboard"], ["help", "help", "Help"]];
@@ -2129,6 +2129,11 @@ h1,h2{font-weight:700;letter-spacing:-.03em}.pagehead h1{font-size:30px}
       return;
   };
   onRemoteChange(paint);
+  addEventListener("hashchange", () => {
+    role = location.hash === "#candidate" ? "candidate" : "recruiter";
+    if (!me())
+      paint();
+  });
   paint();
 })();
 </script></body></html>

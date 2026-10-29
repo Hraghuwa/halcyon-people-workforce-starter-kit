@@ -7,7 +7,7 @@ import { journey, roles, chat, cHelp, cact, mine } from "./candidate.ts";
 import { mapView, drawMap, mact } from "./map.ts";
 
 declare const Chart: any;
-let role: "recruiter" | "candidate" = "recruiter";
+let role: "recruiter" | "candidate" = location.hash === "#candidate" ? "candidate" : "recruiter"; // simulator.html#candidate opens the Candidate login
 let bump = false;
 let charts: any[] = [];
 
@@ -132,4 +132,5 @@ setRender(paint);
   if (ract(a, ...r) || mact(a, ...r) || cact(a, ...r)) return;
 };
 onRemoteChange(paint);
+addEventListener("hashchange", () => { role = location.hash === "#candidate" ? "candidate" : "recruiter"; if (!me()) paint(); });
 paint();
