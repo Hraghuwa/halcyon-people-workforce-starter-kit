@@ -1,6 +1,6 @@
 # Halcyon Basket: People and Workforce module (starter kit)
 
-Team Pulse: Shreya Kotary, Swapnil Mathur, Harsh Raghuwanshi, Gaurav Jawalkar, Shweta Agarwal.
+Team Pulse: Shreya Kotary, Harsh Raghuwanshi, Swapnil Mathur, Gaurav Jawalkar, Shweta Agarwal.
 
 This folder holds the tested core of our simulation. The build guide (Word document) explains every step.
 
