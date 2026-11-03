@@ -1,7 +1,7 @@
 // Candidate side: see the opening, apply (or play a persona), chat with the hiring assistant, understand the decision, challenge it.
 import { db, save, me } from "./store.ts";
 import { ui, esc, ic, avatar, toast, render, story, type Beat } from "./ui.ts";
-import { CITIES, PERSONAS, newWeek, type Cand } from "./sim.ts";
+import { CITIES, PERSONAS, newWeek, newCareerRun, type Cand } from "./sim.ts";
 
 const form = { city: 0, gender: "F" as "F" | "M", lowIncomePin: false, distanceKm: 8, gapMonths: 0, availableDay: 2, id_check: "ok" as Cand["id_check"], age: 24, text: "" };
 export const mine = (): Cand | undefined => db.cands.find(c => c.id === me()?.id);
@@ -31,8 +31,8 @@ export function journey() {
     ${st.step === 2 && !c.challenge ? challengeBox() : ""}
     ${c.challenge ? `<div class="alert ${c.challenge.resolution === "ignored" ? "bad" : "ok"}">${ic(c.challenge.resolution ? "check" : "clock")}<p>${!c.challenge.resolution ? "Your challenge is with a recruiter. A person will read it." : c.challenge.resolution === "reinstated" ? "A recruiter reviewed your file and reinstated you." : c.challenge.resolution === "upheld" ? "A recruiter reviewed it and kept the decision, with a written reason sent to you." : "Your challenge was not answered. You can raise it with HR."}</p></div>` : ""}</section>
     <aside class="card"><h3>Your file</h3><div class="who big">${avatar(c.name, 56)}<div><b>${esc(c.name)}</b><small>${esc(CITIES[c.city])} · ${c.distanceKm} km from the store</small></div></div>
-    <ul class="why"><li>Can start Day ${c.availableDay}</li><li>Work gap: ${c.gapMonths} months (never a reason to reject)</li><li>ID: ${c.id_check === "ok" ? "matches" : c.id_check === "mismatch" ? "name differs" : "photo unreadable"}</li></ul>
-    <button class="btn danger" onclick="act('withdraw')">Withdraw application</button></aside></div>`;
+    <ul class="why"><li>Can start Day ${c.availableDay}</li><li>Work gap: ${c.gapMonths} months (never a reason to reject)</li><li>ID: ${c.id_check === "ok" ? "matches" : c.id_check === "mismatch" ? "name differs" : "photo unreadable"}</li>${c.careerRun?.appliedJobs?.length ? `<li>Career Run roles: ${esc(c.careerRun.appliedJobs.join(", "))}</li>` : ""}${c.careerRun?.keywords?.length ? `<li>ATS Keywords: ${esc(c.careerRun.keywords.join(", "))}</li>` : ""}</ul>
+    <div class="actions"><button class="btn primary" onclick="act('go','run')">Play Career Run ${ic("spark")}</button><button class="btn danger" onclick="act('withdraw')">Withdraw application</button></div></aside></div>`;
 }
 
 const chip = (on: boolean, label: string, a: string) => `<button type="button" class="chipb ${on ? "on" : ""}" aria-pressed="${on}" onclick="${a}">${label}</button>`;
@@ -49,8 +49,9 @@ export function roles() {
   const job = `<section class="card job"><div class="ch"><div><small>Open now · ${s.cities} cities</small><h2>${esc(s.title)}</h2></div><span class="chip ok">Live</span></div>
     <p>Halcyon Basket needs <b>${s.vacancies}</b> temporary pickers and packers before Day 4. About <b>${s.applications.toLocaleString()}</b> people are applying, so a smart screening agent helps, and a person approves every offer.</p>
     <div class="facts">${[["people", s.vacancies, "places"], ["pin", s.cities, "cities"], ["clock", "Day 4", "start by"]].map(([i, v, l]) => `<div>${ic(i as string)}<b class="num">${v}</b><small>${l}</small></div>`).join("")}</div></section>`;
-  if (c) return job + `<section class="card"><h3>You have applied</h3><p class="hint">See what happens next in My Journey.</p><button class="btn primary" onclick="act('go','journey')">Open My Journey</button></section>`;
-  return job + `<section class="card"><h2>Play as someone, or be yourself</h2><p class="lead">Each person below has a real story. See how the system treats them, then try your own.</p>
+  if (c) return job + `<section class="card"><h3>You have applied</h3><p class="hint">See what happens next in My Journey, or play through the pipeline in Career Run.</p><div class="actions"><button class="btn primary" onclick="act('go','run')">Play Career Run ${ic("spark")}</button><button class="btn" onclick="act('go','journey')">Open My Journey</button></div></section>`;
+  return job + `<section class="card"><h2>Play as someone, or be yourself</h2><p class="lead">Each person below has a real story. See how the system treats them, then try your own — or jump straight into <b>Career Run</b>.</p>
+    <div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="act('go','run')">Play Career Run (Side-Scroller) ${ic("spark")}</button></div>
     <div class="personas">${PERSONAS.map((p, i) => `<div class="persona">${avatar(p.name, 52)}<b>${p.name}</b><small>${CITIES[p.city]} · ${p.distanceKm} km</small><p>${esc(p.story)}</p><button class="btn" onclick="act('apply',${i})">Apply as ${p.name.split(" ")[0]}</button></div>`).join("")}</div></section>
   <section class="card"><h2>Your own application</h2><div class="form">
     <div class="field col"><b>City</b><div class="chips">${CITIES.slice(0, s.cities).map((n, i) => chip(form.city === i, n, `act('f','city',${i})`)).join("")}</div></div>
@@ -75,7 +76,7 @@ export function cact(a: string, ...r: any[]): boolean {
     case "ctext": form.text = x; return true;
     case "apply": {
       const base = x >= 0 ? PERSONAS[x] : { name: m.name, city: form.city, gender: form.gender, lowIncomePin: form.lowIncomePin, age: form.age, gapMonths: form.gapMonths, distanceKm: form.distanceKm, availableDay: form.availableDay, id_check: form.id_check, story: "Applied as themselves." };
-      db.cands = db.cands.filter(q => q.id !== m.id); const nc: Cand = { ...base, id: m.id, appliedAt: Date.now() }; nc.week = newWeek(nc); db.cands.push(nc); ui.view = "week"; toast("Application sent"); break;
+      db.cands = db.cands.filter(q => q.id !== m.id); const nc: Cand = { ...base, id: m.id, appliedAt: Date.now() }; nc.week = newWeek(nc); nc.careerRun = newCareerRun("picker"); db.cands.push(nc); ui.view = "week"; toast("Application sent"); break;
     }
     case "withdraw": db.cands = db.cands.filter(q => q.id !== m.id); ui.view = "roles"; break;
     case "challenge": if (c && form.text.trim()) { c.challenge = { text: form.text.trim().slice(0, 300) }; form.text = ""; toast("Challenge sent to a recruiter"); } else { toast("Write a sentence first"); return true; } break;

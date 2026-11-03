@@ -16,11 +16,44 @@ export const clamp = (v: number) => Math.max(0, Math.min(100, v));
 export interface ScenarioCfg { title: string; vacancies: number; cities: number; applications: number; recruiters: number; crisis: boolean; published: boolean; by: string }
 export const DEFAULT_SCENARIO: ScenarioCfg = { title: R1.title, vacancies: 600, cities: 9, applications: 8400, recruiters: 12, crisis: true, published: false, by: "" };
 
+export interface CareerRunState {
+  outfit: "picker" | "rider" | "lead";
+  unlocked: number;
+  current: number; // 0 = hub, 1..5 = levels
+  m: { skills: number; trust: number; stamina: number; fairness: number };
+  appliedJobs: string[];
+  keywords: string[];
+  screening: { salary?: string; notice?: string; location?: string; honest: number; portfolio?: boolean; referral?: boolean };
+  interview: { score: number; notes: string[]; styles: string[]; hr: boolean; tech: boolean; exec: boolean };
+  offer: { status: "none" | "pending" | "accepted" | "negotiated" | "walked" | "rejected"; base: number; final: number; role: string; pay?: number; marketData?: boolean; competing?: boolean };
+  choices: Record<string, { picked: string; label: string; route: "high" | "pipe" | "low"; level: number }>;
+  npcs: Record<string, string>;
+  badges: Record<number, boolean[]>;
+  secrets: string[];
+  deaths: Record<number, number>;
+  mentorOn: boolean;
+  comboBest: number;
+  ending: "" | "Hired" | "Hired and Fair" | "Walked Away" | "Rejected";
+}
+export const newCareerRun = (outfit: CareerRunState["outfit"] = "picker"): CareerRunState => ({
+  outfit, unlocked: 1, current: 0,
+  m: { skills: 45, trust: 65, stamina: 90, fairness: 60 },
+  appliedJobs: [], keywords: [],
+  screening: { honest: 0 },
+  interview: { score: 0, notes: [], styles: [], hr: false, tech: false, exec: false },
+  offer: { status: "pending", base: 185, final: 185, role: "Picker · Hub", pay: 18500 },
+  choices: {}, npcs: {},
+  badges: { 1: [false, false, false], 2: [false, false, false], 3: [false, false, false], 4: [false, false, false] },
+  secrets: [], deaths: { 1: 0, 2: 0, 3: 0, 4: 0 },
+  mentorOn: false, comboBest: 0, ending: "",
+});
+
 export interface Cand {
   id: string; name: string; city: number; gender: "F" | "M"; lowIncomePin: boolean; age: number; gapMonths: number;
   distanceKm: number; availableDay: number; id_check: Applicant["id_check"]; story: string; appliedAt: number;
   challenge?: { text: string; resolution?: "reinstated" | "upheld" | "ignored" };
   week?: Week;
+  careerRun?: CareerRunState;
 }
 // The candidate's own stakes: rent is due, so they need a joining letter by Day 4.
 export interface CM { savings: number; energy: number; hope: number; faith: number }

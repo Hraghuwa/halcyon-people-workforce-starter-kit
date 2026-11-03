@@ -1,6 +1,6 @@
 // Run with bun (the UI modules import JSON directly): bun src/ui/sim.test.ts
 import assert from "node:assert/strict";
-import { DEFAULT_SCENARIO, newPlay, newWeek, START_CM, result, lastRunFor, PERSONAS, type Cand } from "./sim.ts";
+import { DEFAULT_SCENARIO, newPlay, newWeek, newCareerRun, START_CM, result, lastRunFor, PERSONAS, type Cand } from "./sim.ts";
 
 const sc = { ...DEFAULT_SCENARIO, published: true, crisis: false };
 const play = (o: object) => ({ ...newPlay(sc), ...o });
@@ -23,4 +23,8 @@ assert.ok(last.reasons.c1?.includes("Nobody rejected you for a work gap") || las
 assert.equal(newWeek({ id_check: "mismatch", gapMonths: 0 }).q1, "id"); assert.equal(newWeek({ id_check: "ok", gapMonths: 14 }).q1, "gap"); assert.equal(newWeek({ id_check: "ok", gapMonths: 1 }).q1, "");
 assert.deepEqual(newWeek({ id_check: "ok", gapMonths: 0 }).m, START_CM);
 assert.ok(last.cuts?.c1 && last.cuts.c1.km > 0, "cutoff recorded for every real candidate");
+// Career Run state initializes cleanly with 4 meters, 4 badge sets, and unlocked level 1.
+const cr = newCareerRun("picker");
+assert.equal(cr.unlocked, 1); assert.equal(cr.m.trust, 65); assert.equal(cr.badges[1].length, 3);
+assert.equal(cr.offer.base, 185); assert.equal(cr.offer.final, 185); assert.equal(cr.offer.status, "pending");
 console.log("UI game-logic tests passed.");

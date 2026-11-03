@@ -49,7 +49,7 @@ export function mapView() {
   <section class="card"><h3>What if...</h3><p class="hint">Change the agent's rules and watch the map change. This does not alter your game until you apply it.</p>
     ${sw("balancePins", "Reserve places for every pin-code group", "Fixes parity between groups.", m.l.balancePins)}${sw("idLate", "Check IDs only for the shortlist", "Frees up recruiters.", !m.l.idFirst)}
     <div class="actions"><button class="btn primary" ${canApply ? "" : "disabled"} onclick="act('mapuse')">Use these rules in my game</button>${canApply ? "" : '<small>Start Day 1 and pick the AI agent to apply them.</small>'}</div></section>
-  <section class="card"><h3>Your real candidates here</h3>${m.real.length ? m.real.map(r => `<div class="row"><span class="dotl ${m.sl.has(r.id) ? "ok" : m.rv.has(r.id) ? "gate" : ""}"></span><div class="grow"><b>${esc(r.c.name)}</b><small>${r.c.distanceKm} km · ${esc(statusOf(m, r.a))}</small></div></div>`).join("") : '<p class="hint">No real candidates in this city yet. Open a Candidate tab and apply.</p>'}</section></aside></div>`;
+  <section class="card"><h3>Your real candidates here</h3>${m.real.length ? m.real.map(r => `<div class="row"><span class="dotl ${m.sl.has(r.id) ? "ok" : m.rv.has(r.id) ? "gate" : ""}"></span><div class="grow"><b>${esc(r.c.name)}</b><small>${r.c.distanceKm} km · ${esc(statusOf(m, r.a))}${r.c.careerRun?.appliedJobs?.length ? ` · Roles: ${esc(r.c.careerRun.appliedJobs.join(", "))}` : ""}</small></div>${r.c.careerRun ? `<i class="chip ok">Trust ${r.c.careerRun.m.trust}</i>` : ""}</div>`).join("") : '<p class="hint">No real candidates in this city yet. Open a Candidate tab and apply.</p>'}</section></aside></div>`;
 }
 
 export function drawMap() {
